@@ -25,7 +25,12 @@ enum class TokenType {
     OpenSquare,
     CloseSquare,
     OpenCurly,
-    CloseCurly
+    CloseCurly,
+    If,
+    Then,
+    For,
+    While,
+    Do,
 };
 
 std::ostream& operator<<(std::ostream& os, const TokenType token);
