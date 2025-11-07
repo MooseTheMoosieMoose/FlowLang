@@ -44,6 +44,7 @@ struct uChar {
     constexpr explicit operator uint32_t() const { return n; }
     constexpr bool operator==(const uChar& other) const = default;
     constexpr bool operator!=(const uChar& other) const = default;
+    bool operator<(const uChar& other) const; //Required to act as a key for map
     
     constexpr uint32_t writeSize() const {
         return ((n >> 24) <= 3) ? (n >> 24) : 4;
@@ -81,6 +82,82 @@ consteval uChar operator""_u(const char* bytes, const size_t len) {
 std::ostream& operator<<(std::ostream& os, const uChar c);
 
 /*======================================================================================================*/
+/*                                         UcharIter                                                    */
+/*======================================================================================================*/
+
+// Ref: https://stackoverflow.com/questions/69890176/create-contiguous-iterator-for-custom-class
+class UcharIter {
+public:
+    //Basic using traits
+    using iterator_catagory = std::contiguous_iterator_tag;
+    using iterator_concept = std::contiguous_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = uChar;
+    using pointer = uChar*;
+    using reference = uChar&;
+
+    //Constructor for begin and end
+    UcharIter(pointer ptr) : iptr(ptr) {}
+
+    //Define for weakly_incrementable
+    UcharIter& operator++() { iptr++; return *this; }
+    UcharIter operator++(int) {UcharIter temp = *this; (*this)++; return temp; }
+    UcharIter() : iptr(nullptr) {}
+
+    //Define for input_or_output_iterator
+    reference operator*() { return *iptr; }
+
+    //Define for indirectly_readable
+    friend reference operator*(const UcharIter& it) { return *(it.iptr); }
+
+    //Define for forward_iterator
+    bool operator==(const UcharIter& it) const { return iptr == it.iptr; }
+
+    //Define for bi-directional iterator
+    UcharIter& operator--() { iptr--; return *this; }
+    UcharIter operator--(int) { UcharIter tmp = *this; (*this)--; return tmp; }
+
+    //Define for random access iterator
+    std::weak_ordering operator<=>(const UcharIter& it) const {
+        return iptr <=> it.iptr;
+    }
+    difference_type operator-(const UcharIter& it) const { return iptr - it.iptr; }
+
+    //Define for iter_difference
+    UcharIter& operator+=(difference_type diff) { iptr += diff; return *this; }
+    UcharIter& operator-=(difference_type diff) { iptr -= diff; return *this; }
+    UcharIter operator+(difference_type diff) const { return UcharIter(iptr + diff); }
+    UcharIter operator-(difference_type diff) const { return UcharIter(iptr - diff); }
+    friend UcharIter operator+(difference_type diff, const UcharIter& it) {
+        return it + diff;
+    }
+    friend UcharIter operator-(difference_type diff, const UcharIter& it) {
+        return it - diff;
+    }
+    reference operator[](difference_type diff) const { return iptr[diff]; }
+
+    //Finally, we can declare this is a contigous iterator
+    pointer operator->() const { return iptr; }
+    using element_type = uChar;
+private:
+    uChar* iptr;
+};
+
+static_assert(std::weakly_incrementable<UcharIter>);
+static_assert(std::input_or_output_iterator<UcharIter>);
+static_assert(std::indirectly_readable<UcharIter>);
+static_assert(std::input_iterator<UcharIter>);
+static_assert(std::incrementable<UcharIter>);
+static_assert(std::forward_iterator<UcharIter>);
+static_assert(std::bidirectional_iterator<UcharIter>);
+static_assert(std::totally_ordered<UcharIter>);
+static_assert(std::sized_sentinel_for<UcharIter, UcharIter>);
+static_assert(std::random_access_iterator<UcharIter>);
+static_assert(std::is_lvalue_reference_v<std::iter_reference_t<UcharIter>>);
+static_assert(std::same_as<std::iter_value_t<UcharIter>, std::remove_cvref_t<std::iter_reference_t<UcharIter>>>);
+static_assert(std::contiguous_iterator<UcharIter>);
+
+/*======================================================================================================*/
 /*                                         Utf8String                                                   */
 /*======================================================================================================*/
 
@@ -108,6 +185,9 @@ public:
 
     //Friend overrides
     friend std::ostream& operator<<(std::ostream& os, const Utf8String& str);
+    friend Utf8StringView;
+
+    bool operator<(const Utf8String& other) const;
 
     /**
      * @brief a method that is required to be run before printing utf8 strings
@@ -162,6 +242,9 @@ public:
     Utf8StringView(const Utf8String& str, size_t start, size_t end);
 
     friend std::ostream& operator<<(std::ostream& os, const Utf8StringView& str);
+    friend Utf8String;
+
+    bool operator==(const Utf8String& other) const;
 
     const uChar& operator[](size_t index) const;
 
@@ -171,81 +254,9 @@ public:
     
     Utf8String toOwned() const;
 
-    // Ref: https://stackoverflow.com/questions/69890176/create-contiguous-iterator-for-custom-class
-    class Iter {
-    public:
-        //Basic using traits
-        using iterator_catagory = std::contiguous_iterator_tag;
-        using iterator_concept = std::contiguous_iterator_tag;
-        using difference_type = std::ptrdiff_t;
-        using value_type = uChar;
-        using pointer = uChar*;
-        using reference = uChar&;
-
-        //Constructor for begin and end
-        Iter(pointer ptr) : iptr(ptr) {}
-
-        //Define for weakly_incrementable
-        Iter& operator++() { iptr++; return *this; }
-        Iter operator++(int) {Iter temp = *this; (*this)++; return temp; }
-        Iter() : iptr(nullptr) {}
-
-        //Define for input_or_output_iterator
-        reference operator*() { return *iptr; }
-
-        //Define for indirectly_readable
-        friend reference operator*(const Iter& it) { return *(it.iptr); }
-
-        //Define for forward_iterator
-        bool operator==(const Iter& it) const { return iptr == it.iptr; }
-
-        //Define for bi-directional iterator
-        Iter& operator--() { iptr--; return *this; }
-        Iter operator--(int) { Iter tmp = *this; (*this)--; return tmp; }
-
-        //Define for random access iterator
-        std::weak_ordering operator<=>(const Iter& it) const {
-            return iptr <=> it.iptr;
-        }
-        difference_type operator-(const Iter& it) const { return iptr - it.iptr; }
-
-        //Define for iter_difference
-        Iter& operator+=(difference_type diff) { iptr += diff; return *this; }
-        Iter& operator-=(difference_type diff) { iptr -= diff; return *this; }
-        Iter operator+(difference_type diff) const { return Iter(iptr + diff); }
-        Iter operator-(difference_type diff) const { return Iter(iptr - diff); }
-        friend Iter operator+(difference_type diff, const Iter& it) {
-            return it + diff;
-        }
-        friend Iter operator-(difference_type diff, const Iter& it) {
-            return it - diff;
-        }
-        reference operator[](difference_type diff) const { return iptr[diff]; }
-
-        //Finally, we can declare this is a contigous iterator
-        pointer operator->() const { return iptr; }
-        using element_type = uChar;
-    private:
-        uChar* iptr;
-    };
 private:
     const uChar* start;
     size_t len;
 };
 
 std::ostream& operator<<(std::ostream& os, const Utf8StringView& str);
-
-static_assert(std::weakly_incrementable<Utf8StringView::Iter>);
-static_assert(std::input_or_output_iterator<Utf8StringView::Iter>);
-static_assert(std::indirectly_readable<Utf8StringView::Iter>);
-static_assert(std::input_iterator<Utf8StringView::Iter>);
-static_assert(std::incrementable<Utf8StringView::Iter>);
-static_assert(std::forward_iterator<Utf8StringView::Iter>);
-static_assert(std::bidirectional_iterator<Utf8StringView::Iter>);
-static_assert(std::totally_ordered<Utf8StringView::Iter>);
-static_assert(std::sized_sentinel_for<Utf8StringView::Iter, Utf8StringView::Iter>);
-static_assert(std::random_access_iterator<Utf8StringView::Iter>);
-static_assert(std::is_lvalue_reference_v<std::iter_reference_t<Utf8StringView::Iter>>);
-static_assert(std::same_as<std::iter_value_t<Utf8StringView::Iter>,
-                std::remove_cvref_t<std::iter_reference_t<Utf8StringView::Iter>>>);
-static_assert(std::contiguous_iterator<Utf8StringView::Iter>);

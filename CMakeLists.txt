@@ -19,11 +19,3 @@ file(GLOB SRC_FILES ${CMAKE_SOURCE_DIR}/src/*.cpp)
 
 # Define the executable target
 add_executable(${PROJECT_NAME} ${SRC_FILES})
-
-# Optionally set build folder behavior
-# (You don't need to specify "build" here — just run CMake from it)
-# Example usage from terminal:
-#   mkdir build
-#   cd build
-#   cmake ..
-#   cmake --build .

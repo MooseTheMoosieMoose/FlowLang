@@ -25,7 +25,7 @@ std::ostream& operator<<(std::ostream& os, const TokenType token) {
         case TokenType::CloseSquare: { os << "Close Parenthesis"; return os; }
         case TokenType::OpenCurly: { os << "Open Curly Bracket"; return os; }
         case TokenType::CloseCurly: { os << "Close Curly Bracket"; return os; }
-        default: { os << "Forgot to define this type for printing"; return os; }
+        default: { os << "Keyword"; return os; }
     }
 }
 

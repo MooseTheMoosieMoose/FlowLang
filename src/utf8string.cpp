@@ -12,6 +12,7 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 #include <cstring>          //Gets memcpy
 #include <bit>              //Gives us countl_ones
 #include <fstream>          //Allows us to read directly from a string
+#include <algorithm>
 
 /*======================================================================================================*/
 /*                                           uChar                                                      */
@@ -21,6 +22,10 @@ std::ostream& operator<<(std::ostream& os, const uChar c) {
     const char* cStart = reinterpret_cast<const char*>(&c);
     os.write(cStart, c.writeSize());
     return os;
+}
+
+bool uChar::operator<(const uChar& other) const {
+    return (n < other.n);
 }
 
 /*======================================================================================================*/
@@ -71,6 +76,14 @@ const uChar& Utf8String::operator[](size_t index) const {
         throw std::out_of_range("Accessed UTF8 string with an illegal index");
     }
     return data[index];
+}
+
+bool Utf8String::operator<(const Utf8String& other) const {
+    return std::lexicographical_compare(
+        data.begin(), data.end(),
+        other.data.begin(), other.data.end(),
+        [](const uChar a, const uChar b) { return a.n < b.n; }
+    );
 }
 
 const uChar* Utf8String::getDataPointer() const {
@@ -173,3 +186,6 @@ std::ostream& operator<<(std::ostream& os, const Utf8StringView& str) {
     return os;
 }
 
+bool Utf8StringView::operator==(const Utf8String& other) const {
+    return (other.data.size() == len) && (std::equal(other.data.begin(), other.data.end(), start, start + len));
+}
