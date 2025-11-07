@@ -10,6 +10,7 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 
 #include "tokenizer.hpp"
 #include "utf8string.hpp"
+#include <map>
 
 static constexpr bool isOperatorChar(uChar c) {
     switch (c.n) {
@@ -107,6 +108,7 @@ static constexpr size_t countTakeWhile(const Utf8String& text, size_t curPos, Pr
 Tokenizer::Tokenizer(const Utf8String& text) {
     size_t curPos = 0;
     size_t lastPos = 0;
+
     const size_t maxCharCount = text.getCharCount();
     while (curPos < maxCharCount) {
         uChar curChar = text[curPos];

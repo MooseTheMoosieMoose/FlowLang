@@ -13,24 +13,40 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 #include "utf8string.hpp"
 
 enum class TokenType {
+    //The undefined error type
     Undefined,
+
+    //General Operators
     Operator,
-    Number,
-    Prepocessor,
-    EOL,
-    Identifier,
-    StringLit,
-    OpenParen,
-    CloseParen,
-    OpenSquare,
-    CloseSquare,
-    OpenCurly,
-    CloseCurly,
+
+    //Reserved Words
+    Func,
+    Import,
     If,
     Then,
     For,
     While,
     Do,
+
+    //All other words
+    Identifier,
+
+    //Literals
+    Number,
+    StringLit,
+
+    //Special Symbols
+    Prepocessor,
+    EOL,
+    
+    //Brackets and braces
+    OpenParen,
+    CloseParen,
+    OpenSquare,
+    CloseSquare,
+    OpenCurly,
+    CloseCurly
+    
 };
 
 std::ostream& operator<<(std::ostream& os, const TokenType token);

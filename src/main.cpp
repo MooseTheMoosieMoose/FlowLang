@@ -4,7 +4,7 @@
 #include "tokenizer.hpp"
 int main() {
     Utf8String::setLocale();
-    std::string filePath = "/mnt/c/Users/Moose/Desktop/Programming/test/test.fl";
+    std::string filePath = "/mnt/c/Users/Moose/Desktop/Programming/FlowLang/test.fl";
     Utf8String fileContent = Utf8String::fromFile(filePath.c_str());
     Tokenizer tokenizer = Tokenizer(fileContent);
     for (auto t : tokenizer.getTokens()) {
