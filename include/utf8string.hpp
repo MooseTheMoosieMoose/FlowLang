@@ -235,6 +235,8 @@ std::ostream& operator<<(std::ostream& os, const Utf8String& str);
 
 class Utf8StringView {
 public:
+    Utf8StringView();
+    
     Utf8StringView(const uChar* start, size_t len);
 
     Utf8StringView(const Utf8String& str);

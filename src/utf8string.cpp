@@ -152,6 +152,8 @@ std::ostream& operator<<(std::ostream& os, const Utf8String& str) {
 /*                                           Utf8StringView                                             */
 /*======================================================================================================*/
 
+Utf8StringView::Utf8StringView() : start(nullptr), len(0) {}
+
 Utf8StringView::Utf8StringView(const uChar* start, size_t len) : start(start), len(len) {}
 
 Utf8StringView::Utf8StringView(const Utf8String& str) : start(str.getDataPointer()), len(str.getCharCount()) {}

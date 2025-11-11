@@ -1,10 +1,2 @@
-@import sl.io;
 
-func main()
-    # This is an example of a comment #
-    let str 🐈 = "Hobbes";
-    let str 🐱 = "Calvin";
-    if 1 == 1 then
-        println("Hello World!");
-    end
-end
+(())
