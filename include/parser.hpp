@@ -10,5 +10,6 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 
 #include "ast_node.hpp"
 #include <span>
+#include <optional>
 
-ASTNodePtr parseTokens(std::span<Token> tokens);
+std::optional<ASTNodePtr> parseGlobal(std::span<Token> tokens);

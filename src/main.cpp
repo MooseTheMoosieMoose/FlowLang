@@ -12,6 +12,6 @@ int main() {
     //     std::cout << t << std::endl;
     // }
     auto tokens = tokenizer.getTokens();
-    ASTNodePtr head = parseTokens(std::span<Token>(tokens.begin(), tokens.end()));
+    ASTNodePtr head = parseGlobal(std::span<Token>(tokens.begin(), tokens.end()));
     return 0;
 }

@@ -21,6 +21,9 @@ enum class TokenType {
 
     //Reserved Words
     Func,
+    End,
+    Returns,
+    Let,
     Import,
     If,
     Then,
