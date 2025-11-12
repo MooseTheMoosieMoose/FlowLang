@@ -1,6 +1,6 @@
 #!/bin/bash
 
 cd build
-cmake ..
+cmake -G Ninja ..
 cmake --build .
 echo "Finished!"
