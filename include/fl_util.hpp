@@ -8,6 +8,8 @@ Copyright (c) 2025 Moose Abou-Harb All rights reserved.
 This software is licensed under the BSD 3-Clause License, which can be found in the accompanying LICENSE file.
 */
 
+#pragma once
+
 #include "utf8string.hpp"
 #include <variant> //This could be abandoned in favor of tagged unions but ehhhh
 #include <stdexcept> //need this to throw runtime errors

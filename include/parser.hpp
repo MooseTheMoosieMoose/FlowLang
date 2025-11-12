@@ -9,7 +9,7 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 */
 
 #include "ast_node.hpp"
-#include <span>
+#include "fl_util.hpp"
 #include <optional>
 
 namespace fl {
@@ -22,8 +22,8 @@ namespace fl {
  * @brief parseGlobal is meant to be called on the global scope of a file,
  * and implement a more traditional recursive descent approach
  * @returns an optional smart pointer
- * @todo REPLACE RETURN WITH fl::Result type
+ * @todo REPLACE RETURN WITH fl::Result type (done!)
  */
-std::optional<ASTNodePtr> parseGlobal(std::span<Token> tokens);
+Result<ASTNodePtr, Utf8String> parseGlobal(const Span<Token>& tokens);
 
 } //end namespace fl

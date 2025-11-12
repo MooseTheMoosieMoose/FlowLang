@@ -9,6 +9,7 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 */
 
 #include "parser.hpp"
+#include "fl_util.hpp"
 #include <stdint.h>
 #include <iostream>
 
@@ -24,7 +25,7 @@ namespace fl {
  * match with an end, and every { must match with a }
  * @returns an int64_t with the offset from the begining of `tokens` where the matching token is, -1 if err
  */
-static constexpr int64_t seekNextBalanced(const std::span<Token>& tokens, TokenType open, TokenType close) {
+static constexpr int64_t seekNextBalanced(const Span<Token>& tokens, TokenType open, TokenType close) {
     int count = 0;
     int64_t endPos = 0;
     for (const Token& t : tokens) {
@@ -48,7 +49,7 @@ static constexpr int64_t seekNextBalanced(const std::span<Token>& tokens, TokenT
  * end closes all of them
  * @returns an int64_t representing the position in the given span to search for
  */
-static constexpr int64_t seekNextBlockEnd(const std::span<Token>& tokens) {
+static constexpr int64_t seekNextBlockEnd(const Span<Token>& tokens) {
     int count = 0;
     int64_t endPos = 0;
     for (const Token& t : tokens) {
@@ -76,7 +77,7 @@ static constexpr int64_t seekNextBlockEnd(const std::span<Token>& tokens) {
  * where the first instance of `search` is found
  * @returns the index into `tokens` where the next element is, -1 if elem doesnt exist
  */
-static constexpr int64_t seekNext(const std::span<Token>& tokens, TokenType search) {
+static constexpr int64_t seekNext(const Span<Token>& tokens, TokenType search) {
     int64_t endPos = 0;
     for (const Token& t : tokens) {
         if (t.type == search) {
@@ -91,23 +92,37 @@ static constexpr int64_t seekNext(const std::span<Token>& tokens, TokenType sear
 /*                                          Parsers                                                     */
 /*======================================================================================================*/
 
-std::optional<ASTNodePtr> parseFunc(std::span<Token> tokens) {
-
+Result<ASTNodePtr, Utf8String> parseFunc(const Span<Token>& tokens) {
+    return Result<ASTNodePtr, Utf8String>::Ok(ASTNodePtr());
 }
 
-std::optional<ASTNodePtr> parseGlobal(std::span<Token> tokens) {
+Result<ASTNodePtr, Utf8String> parseGlobal(const Span<Token>& tokens) {
 
     for (int i = 0; i < tokens.size(); i++) {
         const Token& token = tokens[i];
         if (token.type == TokenType::Func) {
+            //Seek the matching end to this function block
             int64_t end = seekNextBlockEnd(tokens);
-            if (end == -1) { return std::nullopt; }
-            auto funcTree = parseFunc(tokens.subspan(i, end));
-            if (funcTree.has_value())
 
+            //Err if not found
+            if (end == -1) {
+                return Result<ASTNodePtr, Utf8String>::Err("Function block opened but improperly closed, are you missing an end token?"_utf8);
+            }
+
+            //Otherwise, parse the function block
+            auto funcTree = parseFunc(tokens.subspan(i, end));
+
+            //Check to ensure that the function parsing went good
+            if (!funcTree.isOk()) {
+                return Result<ASTNodePtr, Utf8String>::Err("Function body failed to parse!"_utf8);
+            }
+
+            //Advance to the next token type
             i = end; //Advance past this section
         }
     }
+
+    return Result<ASTNodePtr, Utf8String>::Ok(ASTNodePtr());
 }
 
 } //end namespace fl
