@@ -7,7 +7,13 @@ I dont usually post any of my projects onto public repositories for a few reason
 **Bytecode Compiler**
 * [x] implement a utf8 string and string view system
 * [x] implement a tokenizer
-* [ ] create alternatives to std::expected and std::span (in progress)
+* [x] created an alterative to std::expected for better error propogation without exceptions
+* [ ] create an alternative to std::span (in progress)
 * [ ] create a parser (in progress)
+    * [x] built out initial seeking utilities to find matching elements in a token stream
 * [ ] create a standard for the bytecode
 * [ ] create an AST walker to convert the AST to bytecode
+* [ ] explore techniques to speed up AST generation and memory saftey
+    * [ ] look at converting tokens to owned copies instead of views
+    * [ ] utilize better error handling in the project
+    * [ ] implement more move semantics to optimize data flow

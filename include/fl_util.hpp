@@ -9,7 +9,7 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 */
 
 #include "utf8string.hpp"
-#include <variant>
+#include <variant> //This could be abandoned in favor of tagged unions but ehhhh
 #include <type_traits>
 
 namespace fl {
@@ -29,19 +29,17 @@ namespace fl {
  */
 template <typename R, typename E>
 class Result {
+    static_assert(!std::is_same_v<R, E>, "Results cannot be initilzied with two of the same type!");
 public:
-
     /**
      * @brief static constructor for the Ok type
      */
-    static constexpr Result Ok(const R& okVal) { return Result(okVal); }
-    static Result Ok(R&& okVal) { return Result(std::move(okVal)); }
+    static constexpr Result Ok(R&& okVal) { return Result(std::forward<R>(okVal)); }
 
     /**
      * @brief static constructor for the Err type
      */
-    static constexpr Result Err(const E& errVal) { return Result(errVal); }
-    static Result Err(E&& errVal) { return Result(std::move(errVal)); }
+    static constexpr Result Err(E&& errVal) { return Result(std::forward<E>(errVal)); }
 
     /**
      * @brief checks to see if the result holds the ok value
@@ -66,10 +64,10 @@ public:
      * @brief gets the err value from the Result
      * @note this is nearly identical to all the okValue specializations above
      */
-    constexpr const R& errValue() const& { return std::get<E>(value); }
-    constexpr R& errValue() & { return std::get<E>(value); }
-    constexpr R&& errValue() && { return std::get<E>(std::move(value)); }
-    constexpr const R&& errValue() const&& { return std::get<E>(std::move(value)); }
+    constexpr const E& errValue() const& { return std::get<E>(value); }
+    constexpr E& errValue() & { return std::get<E>(value); }
+    constexpr E&& errValue() && { return std::get<E>(std::move(value)); }
+    constexpr const E&& errValue() const&& { return std::get<E>(std::move(value)); }
 
 private:
     //The actual variant that holds the internal result value
@@ -85,29 +83,34 @@ private:
      * @brief the `err` constructor instantiates the Result with an Err value
      */
     Result(const E& errVal) : value(errVal) {}
-    Result(R&& errVal) : value(std::move(errVal)) {}
-};
-
-/**
- * @brief template specialization to make up for concepts not being a thing in C++17
- * This will force the compiler to err if a Result is made with two of the same type
- */
-template <typename T>
-class Result {
-public:
-    static_assert(sizeof(T) < 0, "Results cannot be initilzied with two of the same type!");
+    Result(E&& errVal) : value(std::move(errVal)) {}
 };
 
 /*======================================================================================================*/
 /*                                          Span                                                        */
 /*======================================================================================================*/
 
+/**
+ * @brief provides a non-owning view over contiguous data, meant to be a drop in
+ * of C++20s std::span
+ */
 template <typename T>
 class Span {
 public:
-    
+    /**
+     * @brief the empty, uninitilzed default span constructor
+     */
+    Span() : ptr(nullptr), len(0) {}
+
+    /**
+     * @brief a basic constructor for a general span
+     */
+    Span(T* first, size_t count) : ptr(first), len(count) {}
 private:
+    //Base data pointer
     T* ptr;
+
+    //The number of contiguous elements
     size_t len;
 };
 
