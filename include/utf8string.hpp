@@ -96,6 +96,18 @@ consteval uChar operator""_u(const char* bytes, const size_t len) {
     }
 }
 
+constexpr uint8_t countLeadingOnes(const uint8_t byte) noexcept {
+    int leadingOnes = 0;
+    for (int i = 7; i >= 0; i--) {
+        if (((byte >> i) & 1) == 1) {
+            leadingOnes++;
+        } else {
+            break;
+        }
+    }
+    return leadingOnes;
+}
+
 /**
  * @brief an operator override for ostream that allows the uchars to be unpacked from the wide expansion into a printable form
  * @note yes this is a bit cursed, im looking into alternatives, and hey it works just fine for now

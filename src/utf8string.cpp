@@ -10,7 +10,6 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 
 #include "utf8string.hpp"   //Gets all our headers
 #include <cstring>          //Gets memcpy
-#include <bit>              //Gives us countl_ones
 #include <fstream>          //Allows us to read directly from a string
 #include <algorithm>
 
@@ -110,7 +109,7 @@ uint32_t Utf8String::expandUtf8(const char* bytes, size_t len) {
         uint8_t curByte = 0;
         uint8_t trailBytes[3] = {0, 0, 0};
         curByte = static_cast<uint8_t>(*bytes);
-        int32_t leadingOnes = std::countl_one(curByte);
+        int32_t leadingOnes = countLeadingOnes(curByte);
 
         uint8_t headerToCheck = 0;
         switch (leadingOnes) {
