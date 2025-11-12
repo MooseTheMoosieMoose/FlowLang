@@ -12,6 +12,10 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 #include <stdint.h>
 #include <iostream>
 
+/*======================================================================================================*/
+/*                                        Seekers                                                       */
+/*======================================================================================================*/
+
 /**
  * @brief will seek through a span to find the next balanced token based on an open and close
  * Balanced token refers to some set with a defined way to open and close, i.e every func must
@@ -40,6 +44,7 @@ static constexpr int64_t seekNextBalanced(const std::span<Token>& tokens, TokenT
  * @brief will search through `tokens` and will find the closing end to the opening block at
  * index 0 of `tokens`. If, While, For, While and Func are considered opening blocks, while
  * end closes all of them
+ * @returns an int64_t representing the position in the given span to search for
  */
 static constexpr int64_t seekNextBlockEnd(const std::span<Token>& tokens) {
     int count = 0;
@@ -80,13 +85,14 @@ static constexpr int64_t seekNext(const std::span<Token>& tokens, TokenType sear
     return -1;
 }
 
+/*======================================================================================================*/
+/*                                          Parsers                                                     */
+/*======================================================================================================*/
+
 std::optional<ASTNodePtr> parseFunc(std::span<Token> tokens) {
 
 }
 
-/**
- * @brief parseGlobal is meant to be called on the global scope of a file
- */
 std::optional<ASTNodePtr> parseGlobal(std::span<Token> tokens) {
 
     for (int i = 0; i < tokens.size(); i++) {

@@ -35,17 +35,32 @@ class Utf8StringView;
 
 /**
  * @brief provides essentially a strong typedef over a uint32_t
- * so its a 4 byte value that has some useful charachteristics
+ * so its a 4 byte value that has some useful charachteristics for storing utf8 data
+ * 
+ * Each charachter stores its actual write size in the upper most byte (`self.n >> 24`)
+ * and if that value is greater than 3 its a 4 byte utf8 char, other wise its `self.n >> 24`
+ * bytes long in actual data
  */
 struct uChar {
+    //The actual data element of a uChar
     uint32_t n;
+
+    //A mess of boilerplate
     constexpr uChar() : n(0) {}
     constexpr uChar(uint32_t v) : n(v) {}
     constexpr explicit operator uint32_t() const { return n; }
     constexpr bool operator==(const uChar& other) const = default;
     constexpr bool operator!=(const uChar& other) const = default;
-    bool operator<(const uChar& other) const; //Required to act as a key for map
+
+    //Required to act as a key for map
+    bool operator<(const uChar& other) const; 
     
+    /**
+     * @brief gets the effective write size stored inside the upper most
+     * byte of a uChar
+     * @returns the size to write
+     * @todo the return value could be a uint8_t
+     */
     constexpr uint32_t writeSize() const {
         return ((n >> 24) <= 3) ? (n >> 24) : 4;
     }
@@ -53,7 +68,9 @@ struct uChar {
 };
 
 /**
- * @brief a macro to pack 4 bytes into a uint32_t aliased as a uChar
+ * @brief a macro to pack 4 bytes into a uChar
+ * @returns a new uChar with the bytes ordered so that `msb` is at `self >> 24` and lsb
+ * is at `lsb & 0xFF`
  */
 constexpr uChar packUChar(uint8_t msb, uint8_t smsb, uint8_t slsb, uint8_t lsb) {
     return (static_cast<uint32_t>(msb) << 24)  | 
@@ -64,6 +81,8 @@ constexpr uChar packUChar(uint8_t msb, uint8_t smsb, uint8_t slsb, uint8_t lsb) 
 
 /**
  * @brief a handy macro that converts a given (up to 4 byte) utf8 char directly into an internal uChar
+ * @note this is consteval so that utf 8 literals can be expanded aat compile time
+ * @returns the new uChar created
  */
 consteval uChar operator""_u(const char* bytes, const size_t len) {
     switch (len) {
@@ -77,85 +96,9 @@ consteval uChar operator""_u(const char* bytes, const size_t len) {
 
 /**
  * @brief an operator override for ostream that allows the uchars to be unpacked from the wide expansion into a printable form
- * @note yes this is a bit cursed, im looking into alternatives
+ * @note yes this is a bit cursed, im looking into alternatives, and hey it works just fine for now
  */
 std::ostream& operator<<(std::ostream& os, const uChar c);
-
-/*======================================================================================================*/
-/*                                         UcharIter                                                    */
-/*======================================================================================================*/
-
-// Ref: https://stackoverflow.com/questions/69890176/create-contiguous-iterator-for-custom-class
-class UcharIter {
-public:
-    //Basic using traits
-    using iterator_catagory = std::contiguous_iterator_tag;
-    using iterator_concept = std::contiguous_iterator_tag;
-    using difference_type = std::ptrdiff_t;
-    using value_type = uChar;
-    using pointer = uChar*;
-    using reference = uChar&;
-
-    //Constructor for begin and end
-    UcharIter(pointer ptr) : iptr(ptr) {}
-
-    //Define for weakly_incrementable
-    UcharIter& operator++() { iptr++; return *this; }
-    UcharIter operator++(int) {UcharIter temp = *this; (*this)++; return temp; }
-    UcharIter() : iptr(nullptr) {}
-
-    //Define for input_or_output_iterator
-    reference operator*() { return *iptr; }
-
-    //Define for indirectly_readable
-    friend reference operator*(const UcharIter& it) { return *(it.iptr); }
-
-    //Define for forward_iterator
-    bool operator==(const UcharIter& it) const { return iptr == it.iptr; }
-
-    //Define for bi-directional iterator
-    UcharIter& operator--() { iptr--; return *this; }
-    UcharIter operator--(int) { UcharIter tmp = *this; (*this)--; return tmp; }
-
-    //Define for random access iterator
-    std::weak_ordering operator<=>(const UcharIter& it) const {
-        return iptr <=> it.iptr;
-    }
-    difference_type operator-(const UcharIter& it) const { return iptr - it.iptr; }
-
-    //Define for iter_difference
-    UcharIter& operator+=(difference_type diff) { iptr += diff; return *this; }
-    UcharIter& operator-=(difference_type diff) { iptr -= diff; return *this; }
-    UcharIter operator+(difference_type diff) const { return UcharIter(iptr + diff); }
-    UcharIter operator-(difference_type diff) const { return UcharIter(iptr - diff); }
-    friend UcharIter operator+(difference_type diff, const UcharIter& it) {
-        return it + diff;
-    }
-    friend UcharIter operator-(difference_type diff, const UcharIter& it) {
-        return it - diff;
-    }
-    reference operator[](difference_type diff) const { return iptr[diff]; }
-
-    //Finally, we can declare this is a contigous iterator
-    pointer operator->() const { return iptr; }
-    using element_type = uChar;
-private:
-    uChar* iptr;
-};
-
-static_assert(std::weakly_incrementable<UcharIter>);
-static_assert(std::input_or_output_iterator<UcharIter>);
-static_assert(std::indirectly_readable<UcharIter>);
-static_assert(std::input_iterator<UcharIter>);
-static_assert(std::incrementable<UcharIter>);
-static_assert(std::forward_iterator<UcharIter>);
-static_assert(std::bidirectional_iterator<UcharIter>);
-static_assert(std::totally_ordered<UcharIter>);
-static_assert(std::sized_sentinel_for<UcharIter, UcharIter>);
-static_assert(std::random_access_iterator<UcharIter>);
-static_assert(std::is_lvalue_reference_v<std::iter_reference_t<UcharIter>>);
-static_assert(std::same_as<std::iter_value_t<UcharIter>, std::remove_cvref_t<std::iter_reference_t<UcharIter>>>);
-static_assert(std::contiguous_iterator<UcharIter>);
 
 /*======================================================================================================*/
 /*                                         Utf8String                                                   */
@@ -163,7 +106,8 @@ static_assert(std::contiguous_iterator<UcharIter>);
 
 /**
  * @brief a utf8 encoded, wide, dynamic string
- * @todo add error handling, and optional dynamics
+ * @todo add error handling, and optional dynamics, look into using a packed utf8
+ * string for the actual bytecode compiler, and use this class for the runtime
  * @details utf8 is an encoding scheme that uses 1-4 bytes to represent all unicode
  * charachters. This encoding scheme is massivly popular, and this implementation
  * seeks to find a balance between speed and size in implementing it. Upon construction,
@@ -174,20 +118,69 @@ static_assert(std::contiguous_iterator<UcharIter>);
  */
 class Utf8String {
 public:
-
+    /**
+     * @brief default simple constructor
+     */
     Utf8String() {};
 
+    /**
+     * @brief a constructor designed to take in raw packed utf8 data
+     */
     Utf8String(const char* dataPtr, size_t dataSize);
 
+    /**
+     * @brief a constructor designed to take in an existing Utf8String and copy it
+     * @todo maybe i could revise this API a bit
+     */
     Utf8String(const uChar* uCharPtr, size_t charCount);
 
+    /**
+     * @brief a helper static constructor that builds a Utf8String straight from
+     * a file
+     * @todo eventually I hope to take this away entirely and build up a new system
+     * for file management
+     */
     static Utf8String fromFile(const char* filePath);
 
-    //Friend overrides
+    //Friend overrides to allow the stream operator, and this types view to access members
     friend std::ostream& operator<<(std::ostream& os, const Utf8String& str);
     friend Utf8StringView;
 
+    /**
+     * @brief uses a lexigraphical compare to order two strings
+     * @note this is required for a Utf8String to be used as a key in a map
+     */
     bool operator<(const Utf8String& other) const;
+
+    /**
+     * @brief an overload to provide direct indexing into the string
+     */
+    uChar& operator[](size_t index);
+    const uChar& operator[](size_t index) const;
+
+    /**
+     * @brief gets a pointer to the data inside the string, as a vector
+     * of uChars
+     */
+    const uChar* getDataPointer() const;
+
+    /**
+     * @brief gets the number of uChars in the string, analogous to size() or len()
+     * @todo standardize naming for sizes across types
+     */
+    size_t getCharCount() const;
+
+    /**
+     * @brief creates a Utf8String view over the entire string
+     * @returns a Utf8String view covering the whole string
+     */
+    Utf8StringView view() const;
+
+    /**
+     * @brief creates a Utf8String view from the `startIndx` to the `endIndx`
+     * @returns a new Utf8StringView over the given range
+     */
+    Utf8StringView view(size_t startIndx, size_t endIndx) const;
 
     /**
      * @brief a method that is required to be run before printing utf8 strings
@@ -195,20 +188,10 @@ public:
      */
     static void setLocale();
 
-    uChar& operator[](size_t index);
-
-    const uChar& operator[](size_t index) const;
-
-    const uChar* getDataPointer() const;
-
-    size_t getCharCount() const;
-
-    Utf8StringView view() const;
-    Utf8StringView view(size_t startIndx, size_t endIndx) const;
-
 private:
     /**
      * @brief expands a packed utf8 byte array into the data member of this string
+     * @note updates data, and should only be called once on object creation
      */
     uint32_t expandUtf8(const char* bytes, size_t len);
 
@@ -233,32 +216,84 @@ std::ostream& operator<<(std::ostream& os, const Utf8String& str);
 /*                                           Utf8StringView                                             */
 /*======================================================================================================*/
 
+/**
+ * @brief Utf8StringView aims to be a rough equivalent to std::string_view for
+ * this custom Utf8String class, providing a non owning view into other data. 
+ * For now it is implemented internally like a std::span, and as I roll back to 
+ * C++17, this class will probably be largely replaced as a template specialization
+ * @note if there is a change made to the underlying Utf8String that this view covers,
+ * it is possible that the strings memory will reallocate, and thus invalidate this view!
+ * @todo some error handling improvements are definetly needed
+ */
 class Utf8StringView {
 public:
+    /**
+     * @brief an empty constructor for default construction, this view is INVALID
+     */
     Utf8StringView();
-    
+
+    /**
+     * @brief a constructor over a span of a uchar
+     */
     Utf8StringView(const uChar* start, size_t len);
 
+    /**
+     * @brief a constructor directly over an entire uChar
+     */
     Utf8StringView(const Utf8String& str);
 
+    /**
+     * @brief a constructor for a subsection of a uChar
+     */
     Utf8StringView(const Utf8String& str, size_t start, size_t end);
 
+    //Friend overrides for the output stream and the views owning class to access members
     friend std::ostream& operator<<(std::ostream& os, const Utf8StringView& str);
     friend Utf8String;
 
+    /**
+     * @brief checks to see if the data pointed to by the two views is the same
+     * @note this will check if the data is the same, not the internal pointers
+     */
     bool operator==(const Utf8String& other) const;
 
+    /**
+     * @brief provides subscript access (non owning only) to a given view
+     */
     const uChar& operator[](size_t index) const;
 
+    /**
+     * @brief gets the len of the interal span
+     * @todo standardize the naming convention between items in this project
+     * for size / len / count etc
+     */
     size_t getLen() const;
 
+    /**
+     * @brief creates a substring over this view between given indices
+     * @returns a new `Utf9StringView` which covers `ptr + startIndx` to 
+     * `ptr + endIndx`
+     */
     Utf8StringView substr(size_t startIndx, size_t endIndx) const;
     
+    /**
+     * @brief creates an owned copy of the view, i.e a new Utf8String
+     * that contains a copy of the span covered by this view
+     * @returns a new `Utf8String`
+     */
     Utf8String toOwned() const;
 
 private:
+    //The data pointer of the span
     const uChar* start;
+
+    //The span size
     size_t len;
 };
 
+/**
+ * @brief provides an override for the output string to print string views, making
+ * debugging much easier
+ * @todo add conditional compilation to remove this on debug builds?
+ */
 std::ostream& operator<<(std::ostream& os, const Utf8StringView& str);

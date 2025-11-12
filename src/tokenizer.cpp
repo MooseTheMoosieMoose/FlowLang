@@ -12,6 +12,13 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 #include "utf8string.hpp"
 #include <map>
 
+/*======================================================================================================*/
+/*                                       Take Macros                                                    */
+/*======================================================================================================*/
+
+/**
+ * @brief a quick macro that checks if a uChar is part of an operator
+ */
 static constexpr bool isOperatorChar(uChar c) {
     switch (c.n) {
         case "+"_u.n:
@@ -31,18 +38,31 @@ static constexpr bool isOperatorChar(uChar c) {
     }
 }
 
+/**
+ * @brief a macro to determine if a uChar is a number
+ * @note if the internal representation of a uChar changes, this
+ * is not garunteed to remain valid!
+ */
 static constexpr bool isNumber(uChar c) {
     return ((c.n >= "0"_u.n) && (c.n <= "9"_u.n));
 }
 
+/**
+ * @brief checks if a given uChar could be part of a numerical literal, i.e its a number or a period
+ */
 static constexpr bool isNumberOrPeriod(uChar c) {
     return (isNumber(c) || c == "."_u);
 }
 
+/**
+ * @brief checks if a given uChar is a whitespace, which is either an ascii space,
+ * ascii newline, ascii tab or ascii linefeed
+ */
 static constexpr bool isWhitespace(uChar c) {
     switch (c.n) {
         case " "_u.n:
         case "\n"_u.n:
+        case "\t"_u.n:
         case "\r"_u.n: {
             return true;
         }
@@ -52,14 +72,26 @@ static constexpr bool isWhitespace(uChar c) {
     }
 }
 
+/**
+ * @brief checks if a given uchar is NOT double quotes
+ * @todo explore making this just a lambda
+ */
 static constexpr bool isntDoubleQuotes(uChar c) {
     return (c != "\""_u);
 }
 
+/**
+ * @brief checks if a uChar is anything but a comment close sign
+ * @todo explore making this just a lambda in the actual tokenizer call
+ */
 static constexpr bool isntTag(uChar c) {
     return (c != "#"_u);
 }
 
+/**
+ * @brief a macro to detect if a given uChar is part of the ascii subset of reserved
+ * single chars that form their own tokens
+ */
 static constexpr bool isReservedChar(uChar c) {
     switch (c.n) {
         case "@"_u.n:
@@ -81,15 +113,25 @@ static constexpr bool isReservedChar(uChar c) {
     }
 }
 
+/**
+ * @brief a macro that sees if its any of the non-special or non reserved charachters,
+ * these charachters are all valid to be part of an identifier
+ */
 static constexpr bool isIdentifier(uChar c) {
-    return (!isWhitespace(c) && 
-            !isOperatorChar(c) && 
-            !isNumberOrPeriod(c) &&
-            !isReservedChar(c) &&
-            isntDoubleQuotes(c)) &&
-            isntTag(c);
+    return (c.writeSize() > 2) ? true : 
+                    (!isWhitespace(c) && 
+                    !isOperatorChar(c) && 
+                    !isNumberOrPeriod(c) &&
+                    !isReservedChar(c) &&
+                    isntDoubleQuotes(c)) &&
+                    isntTag(c);
 }
 
+/**
+ * @brief a templated macro that is inspired by rust's iter take_while which takes a predicate
+ * and takes from an iter. It is used to search through the given input, under a given predicate
+ * @returns a size_t with the position of the first charachter for which the predicate is false
+ */
 template <typename Predicate>
 static constexpr size_t countTakeWhile(const Utf8String& text, size_t curPos, Predicate takeFunction) {
     size_t advance = curPos;
@@ -105,6 +147,17 @@ static constexpr size_t countTakeWhile(const Utf8String& text, size_t curPos, Pr
     return advance;
 }
 
+/*======================================================================================================*/
+/*                                       Tokenizer                                                      */
+/*======================================================================================================*/
+
+/**
+ * @brief tokenizes a given input as a Utf8String. This is a state machine approach that builds
+ * views over the original text to minimize copies. It is also implemented to be easy to add
+ * single char special charachters, and defined keywords by putting them in a map which is then
+ * checked against
+ * @todo check error handling
+ */
 Tokenizer::Tokenizer(const Utf8String& text) {
     size_t curPos = 0;
     size_t lastPos = 0;
@@ -180,6 +233,9 @@ Tokenizer::Tokenizer(const Utf8String& text) {
     }
 }
 
+/**
+ * @brief a getter for the tokens
+ */
 const std::vector<Token>& Tokenizer::getTokens() const {
     return tokens;
 }

@@ -10,6 +10,14 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 
 #include "token.hpp"
 
+/*======================================================================================================*/
+/*                                           Token                                                      */
+/*======================================================================================================*/
+
+/**
+ * @brief a quick and dirty temporary override for the print stream
+ * to make debugging with tokens easier
+ */
 std::ostream& operator<<(std::ostream& os, const TokenType token) {
     switch (token) {
         case TokenType::Undefined : { os << "Undefined"; return os; }
@@ -29,6 +37,14 @@ std::ostream& operator<<(std::ostream& os, const TokenType token) {
     }
 }
 
+/*======================================================================================================*/
+/*                                       Token Type                                                     */
+/*======================================================================================================*/
+
+/**
+ * @brief a quick and dirty temporary override for the print stream
+ * to make debugging with tokens easier
+ */
 std::ostream& operator<<(std::ostream& os, const Token& token) {
     os << "Token: [" << token.type << "]";
     if (token.type != TokenType::EOL) {
