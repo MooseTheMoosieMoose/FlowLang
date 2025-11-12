@@ -97,6 +97,8 @@ private:
  * @brief a contigous iter is an iterator over a contigous type, which allows it to be optimized for many
  * algorithms inside the standard library. Most data types worked with in this project are continuous so
  * providing this iter makes it easier to implement iters
+ * @todo there is a ton of just *stuff* here which boils down to "its a continous iterator", so
+ * maybe look into a better way to document this and what each line does in practice
  */
 template <typename T>
 class ContIter {
@@ -110,39 +112,22 @@ public:
 
     //Constructor for begin and end
     ContIter(pointer ptr) noexcept : iptr(ptr) {}
-
-    //Define for weakly_incrementable
-    ContIter& operator++() { iptr++; return *this; }
-    ContIter operator++(int) {ContIter temp = *this; (*this)++; return temp; }
     ContIter() noexcept : iptr(nullptr) {}
 
-    //Define for input_or_output_iterator
-    reference operator*() { return *iptr; }
+    //Dereference so we can actually access our elements
+    reference operator*() const noexcept { return *iptr; }
+    //friend reference operator*(const ContIter& it) const { return *(it.iptr); }
 
-    //Define for indirectly_readable
-    friend reference operator*(const ContIter& it) { return *(it.iptr); }
-
-    //Define for forward_iterator
-    bool operator==(const ContIter& it) const { return iptr == it.iptr; }
-
-    //Define for bi-directional iterator
-    ContIter& operator--() { iptr--; return *this; }
-    ContIter operator--(int) { ContIter tmp = *this; (*this)--; return tmp; }
-
-    //Define for random access iterator
-    bool operator!=(const ContIter& it) const noexcept { return iptr != it.iptr; }
-    bool operator<(const ContIter& it) const noexcept { return iptr < it.iptr; }
-    bool operator>(const ContIter& it) const noexcept { return iptr > it.iptr; }
-    bool operator<=(const ContIter& it) const noexcept { return iptr <= it.iptr; }
-    bool operator>=(const ContIter& it) const noexcept { return iptr >= it.iptr; }
-
-    difference_type operator-(const ContIter& it) const { return iptr - it.iptr; }
-
-    //Define for iter_difference
-    ContIter& operator+=(difference_type diff) { iptr += diff; return *this; }
-    ContIter& operator-=(difference_type diff) { iptr -= diff; return *this; }
-    ContIter operator+(difference_type diff) const { return ContIter(iptr + diff); }
-    ContIter operator-(difference_type diff) const { return ContIter(iptr - diff); }
+    //Operator overloads for all of our math
+    ContIter& operator++() noexcept { iptr++; return *this; }
+    ContIter operator++(int) noexcept {ContIter temp = *this; (*this)++; return temp; }
+    ContIter& operator--() noexcept { iptr--; return *this; }
+    ContIter operator--(int) noexcept { ContIter tmp = *this; (*this)--; return tmp; }
+    ContIter& operator+=(difference_type diff) noexcept { iptr += diff; return *this; }
+    ContIter& operator-=(difference_type diff) noexcept { iptr -= diff; return *this; }
+    ContIter operator+(difference_type diff) const noexcept { return ContIter(iptr + diff); }
+    ContIter operator-(difference_type diff) const noexcept { return ContIter(iptr - diff); }
+    difference_type operator-(const ContIter& it) const noexcept { return iptr - it.iptr; }
 
     friend ContIter operator+(difference_type diff, const ContIter& it) {
         return it + diff;
@@ -152,6 +137,15 @@ public:
         return it - diff;
     }
 
+    //Get all of our comparisson operators
+    bool operator==(const ContIter& it) const noexcept { return iptr == it.iptr; }
+    bool operator!=(const ContIter& it) const noexcept { return iptr != it.iptr; }
+    bool operator<(const ContIter& it) const noexcept { return iptr < it.iptr; }
+    bool operator>(const ContIter& it) const noexcept { return iptr > it.iptr; }
+    bool operator<=(const ContIter& it) const noexcept { return iptr <= it.iptr; }
+    bool operator>=(const ContIter& it) const noexcept { return iptr >= it.iptr; }
+
+    //And finally a direct subscripting operation
     reference operator[](difference_type diff) const { return iptr[diff]; }
 
 private:
@@ -198,9 +192,6 @@ public:
      * @brief index operator for non-const access
      */
     T& operator[] (size_t index) {
-        if (index > len) {
-            throw std::runtime_error("Illegal index access to span!");
-        }
         return ptr[index];
     }
 
@@ -208,9 +199,6 @@ public:
      * @brief index operator for const access
      */
     const T& operator[] (size_t index) const {
-        if (index > len) {
-            throw std::runtime_error("Illegal index access to span!");
-        }
         return ptr[index];
     }
 
@@ -218,8 +206,8 @@ public:
      * @brief operator overload for equality, checks to see if the data inside the span
      * is the same, not if the internal pointers are the same
      */
-    bool operator==(const Span& other) const {
-        return (len != other.len) ? false : std::equal(ptr, (ptr + len), other.ptr, (other.ptr + other.len)); 
+    bool operator==(const Span& other) const noexcept {
+        return (len != other.len) ? false : std::equal(ptr, (ptr + len), other.ptr); 
     }
 
     /**
@@ -251,10 +239,20 @@ public:
     }
 
     /**
+     * @brief gets the number of elements in a span
+     */
+    size_t size() const noexcept {
+        return len;
+    }
+
+    /**
      * @brief creates a subspan from `ptr + startIndx` to `ptr + endIndx`
      * @warning startIndx should be less than endIndx!
      */
-    Span subspan(size_t startIndx, size_t endIndx) {
+    Span subspan(size_t startIndx, size_t endIndx) const {
+        if ((endIndx < startIndx) || (startIndx > len) || (endIndx > len)) {
+            throw std::runtime_error("Subspan parameters out of range!");
+        }
         return Span((ptr + startIndx), endIndx);
     }
 

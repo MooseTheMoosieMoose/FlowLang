@@ -7,10 +7,13 @@ I dont usually post any of my projects onto public repositories for a few reason
 **Bytecode Compiler**
 * [x] implement a utf8 string and string view system
 * [x] implement a tokenizer
-* [x] created an alterative to std::expected for better error propogation without exceptions
-* [ ] create an alternative to std::span (in progress)
+* [x] create useful types for C++17 backroll
+    * [x] created an alterative to std::expected for better error propogation without exceptions
+    * [x] create an alternative to std::span
+    * [x] created a super simple custom iterator for the project in use by the custom span
 * [ ] create a parser (in progress)
     * [x] built out initial seeking utilities to find matching elements in a token stream
+    * [ ] make sure all parsers use the new fl::Result type in error handling
 * [ ] create a standard for the bytecode
 * [ ] create an AST walker to convert the AST to bytecode
 * [ ] explore techniques to speed up AST generation and memory saftey
