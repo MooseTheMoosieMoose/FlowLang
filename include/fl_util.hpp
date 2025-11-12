@@ -98,4 +98,17 @@ public:
     static_assert(sizeof(T) < 0, "Results cannot be initilzied with two of the same type!");
 };
 
+/*======================================================================================================*/
+/*                                          Span                                                        */
+/*======================================================================================================*/
+
+template <typename T>
+class Span {
+public:
+    
+private:
+    T* ptr;
+    size_t len;
+};
+
 }; //End namespace fl

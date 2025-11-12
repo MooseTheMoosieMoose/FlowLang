@@ -12,6 +12,8 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 #include "utf8string.hpp"
 #include <map>
 
+namespace fl {
+
 /*======================================================================================================*/
 /*                                       Take Macros                                                    */
 /*======================================================================================================*/
@@ -239,3 +241,5 @@ Tokenizer::Tokenizer(const Utf8String& text) {
 const std::vector<Token>& Tokenizer::getTokens() const {
     return tokens;
 }
+
+} //end namespace fl

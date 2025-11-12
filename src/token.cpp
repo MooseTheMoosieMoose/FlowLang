@@ -10,6 +10,8 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 
 #include "token.hpp"
 
+namespace fl {
+
 /*======================================================================================================*/
 /*                                           Token                                                      */
 /*======================================================================================================*/
@@ -52,3 +54,5 @@ std::ostream& operator<<(std::ostream& os, const Token& token) {
     }
     return os;
 }
+
+} //end namespace fl

@@ -3,11 +3,14 @@
 #include "utf8string.hpp"
 #include "tokenizer.hpp"
 #include "parser.hpp"
+#include "fl_util.hpp"
 
 /**
  * @brief THIS IS A TESTING FILE ONLY
  */
-#include "fl_util.hpp"
+
+using namespace fl;
+
 int main() {
     Utf8String::setLocale();
     std::string filePath = "/mnt/c/Users/Moose/Desktop/Programming/FlowLang/test.fl";
@@ -19,5 +22,6 @@ int main() {
     auto tokens = tokenizer.getTokens();
     ASTNodePtr head = parseGlobal(std::span<Token>(tokens.begin(), tokens.end())).value();
 
+    auto res = fl::Result<int, double>::Ok(4);
     return 0;
 }

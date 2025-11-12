@@ -14,6 +14,8 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 #include "token.hpp"
 #include <vector>
 
+namespace fl {
+
 /*======================================================================================================*/
 /*                                       Tokenizer                                                      */
 /*======================================================================================================*/
@@ -31,3 +33,5 @@ public:
 private:
     std::vector<Token> tokens; //Actual tokens
 };
+
+} //end namespace fl

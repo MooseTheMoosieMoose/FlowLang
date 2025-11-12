@@ -12,6 +12,8 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 
 #include "utf8string.hpp"
 
+namespace fl {
+
 /*======================================================================================================*/
 /*                                       Token Type                                                     */
 /*======================================================================================================*/
@@ -85,3 +87,5 @@ struct Token {
  * @brief 
  */
 std::ostream& operator<<(std::ostream& os, const Token& token);
+
+} //end namespace fl

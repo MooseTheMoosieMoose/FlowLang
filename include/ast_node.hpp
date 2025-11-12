@@ -15,6 +15,8 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 #include <memory>
 #include <iostream>
 
+namespace fl {
+
 /*======================================================================================================*/
 /*                                          ASTNode                                                     */
 /*======================================================================================================*/
@@ -54,3 +56,5 @@ public:
         }
     }
 };
+
+} //end namespace fl

@@ -21,6 +21,8 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 #include <stdexcept>    //Out of range exception
 //#include <format>       //Debugging
 
+namespace fl {
+
 /*======================================================================================================*/
 /*                                     Forward Declarations                                             */
 /*======================================================================================================*/
@@ -297,3 +299,5 @@ private:
  * @todo add conditional compilation to remove this on debug builds?
  */
 std::ostream& operator<<(std::ostream& os, const Utf8StringView& str);
+
+} //end namespace fl

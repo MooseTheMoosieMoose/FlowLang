@@ -12,6 +12,8 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 #include <stdint.h>
 #include <iostream>
 
+namespace fl {
+
 /*======================================================================================================*/
 /*                                        Seekers                                                       */
 /*======================================================================================================*/
@@ -107,3 +109,5 @@ std::optional<ASTNodePtr> parseGlobal(std::span<Token> tokens) {
         }
     }
 }
+
+} //end namespace fl

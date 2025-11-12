@@ -12,6 +12,8 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 #include <span>
 #include <optional>
 
+namespace fl {
+
 /*======================================================================================================*/
 /*                                          Parsers                                                     */
 /*======================================================================================================*/
@@ -23,3 +25,5 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
  * @todo REPLACE RETURN WITH fl::Result type
  */
 std::optional<ASTNodePtr> parseGlobal(std::span<Token> tokens);
+
+} //end namespace fl

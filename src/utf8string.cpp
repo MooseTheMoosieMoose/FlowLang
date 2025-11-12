@@ -14,6 +14,8 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 #include <fstream>          //Allows us to read directly from a string
 #include <algorithm>
 
+namespace fl {
+
 /*======================================================================================================*/
 /*                                           uChar                                                      */
 /*======================================================================================================*/
@@ -191,3 +193,5 @@ std::ostream& operator<<(std::ostream& os, const Utf8StringView& str) {
 bool Utf8StringView::operator==(const Utf8String& other) const {
     return (other.data.size() == len) && (std::equal(other.data.begin(), other.data.end(), start, start + len));
 }
+
+} //end namespace fl
