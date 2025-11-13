@@ -27,7 +27,8 @@ int main() {
 
     std::cout << "Parser finished!" << std::endl;
     if (head.isOk()) {
-        std::cout << "Valid!" << std::endl;
+        auto topLevel = head.okValue();
+        topLevel->log(); //Get a display of the final syntax tree
     } else {
         std::cout << "Error: " << head.errValue() << std::endl;
     }

@@ -48,6 +48,7 @@ static constexpr int64_t seekNextBalanced(const Span<Token>& tokens, TokenType o
  * index 0 of `tokens`. If, While, For, While and Func are considered opening blocks, while
  * end closes all of them
  * @returns an int64_t representing the position in the given span to search for
+ * @note this is NOT inclusive of the matching end token to the one in index 0!
  */
 static constexpr int64_t seekNextBlockEnd(const Span<Token>& tokens) {
     int count = 0;
@@ -93,10 +94,19 @@ static constexpr int64_t seekNext(const Span<Token>& tokens, TokenType search) {
 /*======================================================================================================*/
 
 Result<ASTNodePtr, Utf8String> parseFunc(const Span<Token>& tokens) {
-    return Result<ASTNodePtr, Utf8String>::Ok(ASTNodePtr());
+    //Tokens contains the entire contents of a function body, so the node we want to return is at the top level,
+    //a func token, which is at 0
+    ASTNode funcHead = {.body = tokens[0], .children = std::vector<ASTNodePtr>{}};
+
+    //We then expect an identifier for the function itself as the next token
+    
+
+    ASTNodePtr funcHeadPtr = std::make_shared<ASTNode>(funcHead);
 }
 
 Result<ASTNodePtr, Utf8String> parseGlobal(const Span<Token>& tokens) {
+    //Create an initial empty head to put all top level compilation frags into
+    ASTNodePtr globalHead = ASTNodePtr();
 
     for (int i = 0; i < tokens.size(); i++) {
         const Token& token = tokens[i];
@@ -114,8 +124,11 @@ Result<ASTNodePtr, Utf8String> parseGlobal(const Span<Token>& tokens) {
 
             //Check to ensure that the function parsing went good
             if (!funcTree.isOk()) {
-                return Result<ASTNodePtr, Utf8String>::Err("Function body failed to parse!"_utf8);
+                return funcTree;
             }
+
+            //Everything is valid, we have a func head node ready to get pushed up
+            globalHead->children.push_back(funcTree.okValue());
 
             //Advance to the next token type
             i = end; //Advance past this section
