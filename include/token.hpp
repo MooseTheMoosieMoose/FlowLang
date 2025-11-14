@@ -81,6 +81,8 @@ std::ostream& operator<<(std::ostream& os, const TokenType token);
 struct Token {
     TokenType type;
     Utf8StringView text;
+    size_t lineCount;
+    size_t charCount;
 };
 
 /**

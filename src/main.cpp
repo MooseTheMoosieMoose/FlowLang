@@ -22,16 +22,16 @@ int main() {
     }
     
 
-    auto tokens = tokenizer.getTokens();
-    auto head = parseGlobal(Span<Token>(tokens.data(), tokens.size()));
+    // auto tokens = tokenizer.getTokens();
+    // auto head = parseGlobal(Span<Token>(tokens.data(), tokens.size()));
 
-    std::cout << "Parser finished!" << std::endl;
-    if (head.isOk()) {
-        auto topLevel = head.okValue();
-        topLevel->log(); //Get a display of the final syntax tree
-    } else {
-        std::cout << "Error: " << head.errValue() << std::endl;
-    }
+    // std::cout << "Parser finished!" << std::endl;
+    // if (head.isOk()) {
+    //     auto topLevel = head.okValue();
+    //     topLevel->log(); //Get a display of the final syntax tree
+    // } else {
+    //     std::cout << "Error: " << head.errValue() << std::endl;
+    // }
 
     return 0;
 }

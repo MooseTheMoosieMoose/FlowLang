@@ -39,11 +39,13 @@ public:
     /**
      * @brief static constructor for the Ok type
      */
+    static constexpr Result Ok(const R& okVal) { return Result(okVal); }
     static constexpr Result Ok(R&& okVal) { return Result(std::forward<R>(okVal)); }
 
     /**
      * @brief static constructor for the Err type
      */
+    static constexpr Result Err(const E& errVal) { return Result(errVal); }
     static constexpr Result Err(E&& errVal) { return Result(std::forward<E>(errVal)); }
 
     /**

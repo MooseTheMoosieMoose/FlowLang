@@ -102,6 +102,7 @@ Result<ASTNodePtr, Utf8String> parseFunc(const Span<Token>& tokens) {
     
 
     ASTNodePtr funcHeadPtr = std::make_shared<ASTNode>(funcHead);
+    return Result<ASTNodePtr, Utf8String>::Ok(funcHeadPtr);
 }
 
 Result<ASTNodePtr, Utf8String> parseGlobal(const Span<Token>& tokens) {

@@ -163,6 +163,8 @@ static constexpr size_t countTakeWhile(const Utf8String& text, size_t curPos, Pr
 Tokenizer::Tokenizer(const Utf8String& text) {
     size_t curPos = 0;
     size_t lastPos = 0;
+    size_t lineCount = 1;
+    size_t charCount = 1;
 
     const std::map<uChar, TokenType> singleCharTokenMap = {
         {";"_u, TokenType::EOL}, {"@"_u, TokenType::Prepocessor},
@@ -185,7 +187,12 @@ Tokenizer::Tokenizer(const Utf8String& text) {
         TokenType newType = TokenType::Undefined;
         if (isWhitespace(curChar)) {
             curPos++;
+            charCount++;
             lastPos++;
+            if (curChar == "\n"_u) {
+                lineCount++;
+                charCount = 1;
+            }
             continue;
         } else if (curChar == "#"_u) {
             size_t savedPos = curPos;
@@ -193,6 +200,8 @@ Tokenizer::Tokenizer(const Utf8String& text) {
             if (curPos >= maxCharCount) {
                 throw std::runtime_error("Failed to find closing tag for comment beginning with charachter: " + savedPos);
             }
+            //Even on comments, ensure that chars are advanced
+            charCount += (curPos - lastPos);
             lastPos = curPos;
             continue;
         } else if (isOperatorChar(curChar)) {
@@ -226,11 +235,16 @@ Tokenizer::Tokenizer(const Utf8String& text) {
             }
         }
 
-        //std::cout << "New Token! " << newType << std::endl;
+        //Push back our new token
         tokens.push_back(Token{
             .type = newType,
             .text = Utf8StringView(text, lastPos, curPos),
+            .lineCount = lineCount,
+            .charCount = charCount
         });
+
+        //Advance current charachter by the number of charachters advanced
+        charCount += (curPos - lastPos);
         lastPos = curPos;
     }
 }

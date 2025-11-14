@@ -48,7 +48,7 @@ std::ostream& operator<<(std::ostream& os, const TokenType token) {
  * to make debugging with tokens easier
  */
 std::ostream& operator<<(std::ostream& os, const Token& token) {
-    os << "Token: [" << token.type << "]";
+    os << "Token: [L: " << token.lineCount << " C: " << token.charCount <<  "] [" << token.type << "]";
     if (token.type != TokenType::EOL) {
         os << " With text: [" << token.text << "]";
     }
