@@ -180,6 +180,10 @@ Utf8String Utf8StringView::toOwned() const {
     return Utf8String(start, len);
 }
 
+bool Utf8StringView::isEmpty() const noexcept {
+    return (start == nullptr);
+}
+
 std::ostream& operator<<(std::ostream& os, const Utf8StringView& str) {
     for (int i = 0; i < str.len; i++) {
         const uChar* newChar = str.start + i;

@@ -11,9 +11,17 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 #include "parser.hpp"
 #include "fl_util.hpp"
 #include <stdint.h>
-#include <iostream>
 
 namespace fl {
+
+/*======================================================================================================*/
+/*                                     General Parser Tools                                             */
+/*======================================================================================================*/
+
+ASTNode& FlowParser::addAstNode(const Token& body = Token{}, std::vector<ASTNode&> children = std::vector<ASTNode&>{}) {
+    ast.emplace_back(ASTNode{.body = body, .children = children});
+    return ast.back();
+}
 
 /*======================================================================================================*/
 /*                                        Seekers                                                       */
@@ -93,21 +101,17 @@ static constexpr int64_t seekNext(const Span<Token>& tokens, TokenType search) {
 /*                                          Parsers                                                     */
 /*======================================================================================================*/
 
-Result<ASTNodePtr, Utf8String> parseFunc(const Span<Token>& tokens) {
+ParseResult parseFunc(const Span<Token>& tokens) {
     //Tokens contains the entire contents of a function body, so the node we want to return is at the top level,
     //a func token, which is at 0
-    ASTNode funcHead = {.body = tokens[0], .children = std::vector<ASTNodePtr>{}};
 
     //We then expect an identifier for the function itself as the next token
     
-
-    ASTNodePtr funcHeadPtr = std::make_shared<ASTNode>(funcHead);
-    return Result<ASTNodePtr, Utf8String>::Ok(funcHeadPtr);
 }
 
-Result<ASTNodePtr, Utf8String> parseGlobal(const Span<Token>& tokens) {
+ParseResult FlowParser::parseGlobal(const Span<Token>& tokens) {
     //Create an initial empty head to put all top level compilation frags into
-    ASTNodePtr globalHead = ASTNodePtr();
+    ASTNode& globalHead = addAstNode();
 
     for (int i = 0; i < tokens.size(); i++) {
         const Token& token = tokens[i];
@@ -117,7 +121,7 @@ Result<ASTNodePtr, Utf8String> parseGlobal(const Span<Token>& tokens) {
 
             //Err if not found
             if (end == -1) {
-                return Result<ASTNodePtr, Utf8String>::Err("Function block opened but improperly closed, are you missing an end token?"_utf8);
+                return ParseResult::Err("Function block opened but improperly closed, are you missing an end token?"_utf8);
             }
 
             //Otherwise, parse the function block
@@ -125,18 +129,19 @@ Result<ASTNodePtr, Utf8String> parseGlobal(const Span<Token>& tokens) {
 
             //Check to ensure that the function parsing went good
             if (!funcTree.isOk()) {
-                return funcTree;
+                return ParseResult::Err(funcTree.errValue());
             }
 
             //Everything is valid, we have a func head node ready to get pushed up
-            globalHead->children.push_back(funcTree.okValue());
+            globalHead.addChild(funcTree.okValue());
 
             //Advance to the next token type
             i = end; //Advance past this section
         }
     }
 
-    return Result<ASTNodePtr, Utf8String>::Ok(ASTNodePtr());
+    //All parsing is aOk, we can return
+    return ParseResult::Ok(globalHead);
 }
 
 } //end namespace fl

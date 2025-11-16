@@ -297,6 +297,12 @@ public:
      */
     Utf8String toOwned() const;
 
+    /**
+     * @brief checks to see if the view was created over an empty span
+     * @returns true if the internal pointer is `nullptr`, false otherwise
+     */
+    bool isEmpty() const noexcept;
+
 private:
     //The data pointer of the span
     const uChar* start;

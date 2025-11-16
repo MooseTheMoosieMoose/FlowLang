@@ -20,6 +20,7 @@ I dont usually post any of my projects onto public repositories for a few reason
 * [ ] create a parser (in progress)
     * [x] built out initial seeking utilities to find matching elements in a token stream
     * [x] make sure all parsers use the new fl::Result type in error handling
+    * [x] make AST generation work over a flat map for cache locality
     * [ ] develop a more robust testing framework for parser results
     * [ ] propogate error messages up the parser chain
 * [ ] create a standard for the bytecode
