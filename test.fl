@@ -1,6 +1,6 @@
 
 #This is an example of a comment, notice how this doesnt get added to the token list?#
 
-func main()
+func main() returns none
     let num Αλφα = (4 + 7) * 8 - 3;
 end

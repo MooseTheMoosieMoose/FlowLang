@@ -42,6 +42,8 @@ enum class TokenType {
 
     //All other words
     Identifier,
+    Num,
+    None,
 
     //Literals
     Number,

@@ -178,7 +178,8 @@ Tokenizer::Tokenizer(const Utf8String& text) {
         {"then"_utf8, TokenType::Then}, {"do"_utf8, TokenType::Do},
         {"while"_utf8, TokenType::While}, {"for"_utf8, TokenType::For},
         {"import"_utf8, TokenType::Import}, {"returns"_utf8, TokenType::Returns},
-        {"let"_utf8, TokenType::Let}, {"end"_utf8, TokenType::End}
+        {"let"_utf8, TokenType::Let}, {"end"_utf8, TokenType::End},
+        {"num"_utf8, TokenType::Num}, {"none"_utf8, TokenType::None}
     };
 
     const size_t maxCharCount = text.getCharCount();
