@@ -87,6 +87,12 @@ private:
     std::optional<Utf8String> parseExprs(size_t parent, const Span<Token>& tokens);
 
     /**
+     * @brief parses a normal expression line, like `let val foo = 4 + 5;`
+     * @note this expects to not see the closing EOL token at the end
+     */
+    ParseResult parseExpr(const Span<Token>& tokens);
+
+    /**
      * @brief inserts a new child into the parser AST
      * @note uses emplace so that hopefully each AST node is only constructed once
      */

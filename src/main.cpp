@@ -15,23 +15,30 @@ int main() {
     Utf8String::setLocale();
     std::string filePath = "/mnt/c/Users/Moose/Desktop/Programming/FlowLang/test.fl";
     Utf8String fileContent = Utf8String::fromFile(filePath.c_str());
-    Tokenizer tokenizer = Tokenizer(fileContent);
 
-    for (auto t : tokenizer.getTokens()) {
-        std::cout << t << std::endl;
-    }
+    // for (auto t : tokenizer.getTokens()) {
+    //     std::cout << t << std::endl;
+    // }
     
 
-    auto tokens = tokenizer.getTokens();
+    auto tokensRes = tokenize(fileContent);
+    std::vector<Token> tokens = {};
+    if (tokensRes.isOk()) {
+        tokens = tokensRes.okValue();
+    } else {
+        std::cout << "Tokenizer error: " << tokensRes.errValue() << std::endl;
+        return 1;
+    }
 
     auto parser = FlowParser();
     auto head = parser.parse(tokens);
 
     std::cout << "Parser finished!" << std::endl;
     if (head.isOk()) {
-        parser.log();
+        //parser.log();
     } else {
         std::cout << "Parser Failure: " << head.errValue() << std::endl;
+        return 1;
     }
 
     return 0;

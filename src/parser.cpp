@@ -34,6 +34,40 @@ size_t FlowParser::addAstNode(const Token* newNodeBody, int64_t newParent) {
     return newChildIndx; //Get the last element index
 }
 
+/**
+ * @brief gets the prescedence of an operator
+ */
+int64_t getPrescedence(const Token& token) {
+    //Map all operators to 
+    const std::map<Utf8String, int64_t> presMap = {
+        {"++"_utf8, 1}, {"--"_utf8, 1}, 
+        {"."_utf8, 2},
+        {"!"_utf8, 3},
+        {"*"_utf8, 4}, {"/"_utf8, 4}, {"%"_utf8, 4},
+        {"+"_utf8, 5}, {"-"_utf8, 5},
+        {"<"_utf8, 6}, {"<="_utf8, 6},
+        {">"_utf8, 7}, {">="_utf8, 7},
+        {"=="_utf8, 8}, {"!="_utf8, 8},
+        {"="_utf8, 9},
+        {"+="_utf8, 10}, {"-="_utf8, 10},
+        {"*="_utf8, 11}, {"/="_utf8, 11}
+    };
+
+    //Check prescedence, overriding in the case of function calls
+    if (token.type == TokenType::FuncCall) {
+        return 1;
+    } else {
+        for (const auto& pair : presMap) {
+            if (pair.first == token.text) {
+                return pair.second;
+            }
+        }
+    }
+
+    //Its nothing
+    return -1;
+}
+
 /*======================================================================================================*/
 /*                                        Seekers                                                       */
 /*======================================================================================================*/
@@ -140,7 +174,7 @@ ParseResult FlowParser::parseGlobal(const Span<Token>& tokens) {
             ast[globalHead].addChild(funcTree.okValue());
 
             //Advance to the next token type
-            curTokenIndx = curTokenIndx + end + 1; //Advance past this section
+            curTokenIndx += end + 1; //Advance past this section
             std::cout << "Parsed one block!" << std::endl;
         }
         else {
@@ -160,7 +194,7 @@ ParseResult FlowParser::parseFunc(const Span<Token>& tokens) {
     size_t funcHead = addAstNode(&tokens[0]);
 
     //The first child must then be the function name, which is the next token
-    if ((tokenCount < 2) || (tokens[1].type != TokenType::Identifier)) {
+    if ((tokenCount < 2) || (tokens[1].type != TokenType::FuncCall)) {
         return ParseResult::Err("Function declaration is missing a name!"_utf8);
     }
     size_t funcName = addAstNode(&tokens[1], funcHead);
@@ -231,9 +265,29 @@ std::optional<Utf8String> FlowParser::parseExprs(size_t parent, const Span<Token
 
         } else {
             //Our next line is simply an expression
-            
+            int64_t endOfLine = seekNext(tokens.subspan(curTokenIndx), TokenType::EOL);
+            if (endOfLine == -1) {
+                return std::optional("Unbounded expression, are you missing an end of line?"_utf8);
+            }
+
+            //Parse the expression tree
+            auto exprTree = parseExpr(tokens.subspan(curTokenIndx, curTokenIndx + endOfLine));
+            if (!exprTree.isOk()) {
+                return std::optional(exprTree.errValue());
+            }
+
+            //Everything went fine, add it as a child to parent
+            ast[parent].addChild(exprTree.okValue());
+            curTokenIndx += endOfLine + 1;
         }
     }
+
+    //Everything went fine
+    return std::nullopt;
+}
+
+ParseResult FlowParser::parseExpr(const Span<Token>& tokens) {
+
 }
 
 } //end namespace fl

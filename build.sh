@@ -9,4 +9,5 @@ else
 fi
 cmake --build .
 echo "Finished!"
-bash ./bin/FlowLang
+
+./bin/FlowLang

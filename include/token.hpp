@@ -27,6 +27,7 @@ enum class TokenType {
 
     //General Operators
     Operator,
+    FuncCall, //Invoked when an open paren happens after an identifier
 
     //Comma
     Comma,

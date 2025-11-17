@@ -11,6 +11,7 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 #include "tokenizer.hpp"
 #include "utf8string.hpp"
 #include <map>
+#include <algorithm>
 
 namespace fl {
 
@@ -31,6 +32,7 @@ static constexpr bool isOperatorChar(uChar c) {
         case "<"_u.n:
         case "!"_u.n:
         case "="_u.n:
+        case "%"_u.n:
         case "."_u.n: {
             return true;
         }
@@ -161,7 +163,9 @@ static constexpr size_t countTakeWhile(const Utf8String& text, size_t curPos, Pr
  * checked against
  * @todo check error handling
  */
-Tokenizer::Tokenizer(const Utf8String& text) {
+Result<std::vector<Token>, Utf8String> tokenize(const Utf8String& text) {
+    std::vector<Token> tokens;
+
     size_t curPos = 0;
     size_t lastPos = 0;
     size_t lineCount = 1;
@@ -184,6 +188,14 @@ Tokenizer::Tokenizer(const Utf8String& text) {
         {"let"_utf8, TokenType::Let}, {"end"_utf8, TokenType::End}
     };
 
+    const std::vector<Utf8String> validOperators = {
+        "++"_utf8, "--"_utf8, "."_utf8, "!"_utf8,
+        "*"_utf8, "/"_utf8, "%"_utf8, "+"_utf8, "-"_utf8,
+        "<"_utf8, "<="_utf8, ">"_utf8, ">="_utf8, "=="_utf8, 
+        "!="_utf8, "="_utf8, "+="_utf8, "-="_utf8, "*="_utf8, 
+        "/="_utf8
+    };
+
     const size_t maxCharCount = text.getCharCount();
     while (curPos < maxCharCount) {
         uChar curChar = text[curPos];
@@ -198,10 +210,10 @@ Tokenizer::Tokenizer(const Utf8String& text) {
             }
             continue;
         } else if (curChar == "#"_u) {
-            size_t savedPos = curPos;
+            size_t savedPos = curPos; //Utilize this later for erros
             curPos = countTakeWhile(text, curPos + 1, isntTag) + 1;
             if (curPos >= maxCharCount) {
-                throw std::runtime_error("Failed to find closing tag for comment beginning with charachter: " + savedPos);
+                return Result<std::vector<Token>, Utf8String>::Err("Comment was left unclosed!"_utf8);
             }
             //Even on comments, ensure that chars are advanced
             charCount += (curPos - lastPos);
@@ -210,18 +222,32 @@ Tokenizer::Tokenizer(const Utf8String& text) {
         } else if (isOperatorChar(curChar)) {
             curPos = countTakeWhile(text, curPos, isOperatorChar);
             newType = TokenType::Operator;
+
+            //Test to see if operator is valid
+            auto testView = Utf8StringView(text, lastPos, curPos);
+            auto hit = std::search(validOperators.begin(), validOperators.end(), testView);
+            if (hit == validOperators.end()) {
+                return Result<std::vector<Token>, Utf8String>::Err("Invalid Operator!"_utf8);
+            }
+
         } else if (isNumber(curChar)) {
             curPos = countTakeWhile(text, curPos, isNumberOrPeriod);
             newType = TokenType::Number;
         } else if (curChar == "\""_u) {
-            size_t savedPos = curPos;
+            size_t savedPos = curPos; //remmeber this for erros later
             curPos = countTakeWhile(text, curPos + 1, isntDoubleQuotes) + 1;
             if (curPos >= maxCharCount) {
-                throw std::runtime_error("Failed to find closing quotes for string literal beginning with charachter: " + savedPos);
+                return Result<std::vector<Token>, Utf8String>::Err("String literal left unclosed!"_utf8);
             }
             newType = TokenType::StringLit;
         } else if (singleCharTokenMap.contains(curChar)) {
             curPos++;
+
+            //Conditionally change identifiers to function calls
+            if (curChar == "("_u && tokens.back().type == TokenType::Identifier) {
+                tokens.back().type = TokenType::FuncCall;
+            }
+
             newType = singleCharTokenMap.at(curChar);
         } else {
             curPos = countTakeWhile(text, curPos, isIdentifier);
@@ -250,13 +276,9 @@ Tokenizer::Tokenizer(const Utf8String& text) {
         charCount += (curPos - lastPos);
         lastPos = curPos;
     }
-}
 
-/**
- * @brief a getter for the tokens
- */
-const std::vector<Token>& Tokenizer::getTokens() const {
-    return tokens;
+    //After everything we can return our tokens
+    return Result<std::vector<Token>, Utf8String>::Ok(tokens);
 }
 
 } //end namespace fl
