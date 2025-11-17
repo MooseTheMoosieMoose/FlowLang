@@ -188,13 +188,20 @@ Result<std::vector<Token>, Utf8String> tokenize(const Utf8String& text) {
         {"let"_utf8, TokenType::Let}, {"end"_utf8, TokenType::End}
     };
 
-    const std::vector<Utf8String> validOperators = {
-        "++"_utf8, "--"_utf8, "."_utf8, "!"_utf8,
-        "*"_utf8, "/"_utf8, "%"_utf8, "+"_utf8, "-"_utf8,
-        "<"_utf8, "<="_utf8, ">"_utf8, ">="_utf8, "=="_utf8, 
-        "!="_utf8, "="_utf8, "+="_utf8, "-="_utf8, "*="_utf8, 
-        "/="_utf8
+    const std::map<Utf8String, TokenType> presMap = {
+        {"++"_utf8, TokenType::PostInc}, {"--"_utf8, TokenType::PostDec}, 
+        {"."_utf8, TokenType::Period},
+        {"!"_utf8, TokenType::LogNot},
+        {"*"_utf8, TokenType::Mul}, {"/"_utf8, TokenType::Div}, {"%"_utf8, TokenType::Mod},
+        {"+"_utf8, TokenType::Add}, {"-"_utf8, TokenType::Sub},
+        {"<"_utf8, TokenType::LessThan}, {"<="_utf8, TokenType::LessEqual},
+        {">"_utf8, TokenType::GreaterThan}, {">="_utf8, TokenType::GreaterEqual},
+        {"=="_utf8, TokenType::Equals}, {"!="_utf8, TokenType::NotEquals},
+        {"="_utf8, TokenType::Assign},
+        {"+="_utf8, TokenType::AddAssign}, {"-="_utf8, TokenType::SubAssign},
+        {"*="_utf8, TokenType::MulAssign}, {"/="_utf8, TokenType::DivAssign}
     };
+
 
     const size_t maxCharCount = text.getCharCount();
     while (curPos < maxCharCount) {
@@ -225,9 +232,14 @@ Result<std::vector<Token>, Utf8String> tokenize(const Utf8String& text) {
 
             //Test to see if operator is valid
             auto testView = Utf8StringView(text, lastPos, curPos);
-            auto hit = std::search(validOperators.begin(), validOperators.end(), testView);
-            if (hit == validOperators.end()) {
-                return Result<std::vector<Token>, Utf8String>::Err("Invalid Operator!"_utf8);
+            for (const auto& pair : keywordMap) {
+                if (testView == pair.first) {
+                    newType = pair.second;
+                    break;
+                }
+            }
+            if (newType == TokenType::Operator) {
+                return Result<std::vector<Token>, Utf8String>::Err("Illegal Operator!"_utf8);
             }
 
         } else if (isNumber(curChar)) {

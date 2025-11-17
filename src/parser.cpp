@@ -35,37 +35,57 @@ size_t FlowParser::addAstNode(const Token* newNodeBody, int64_t newParent) {
 }
 
 /**
- * @brief gets the prescedence of an operator
+ * @brief gets the prescedence of an operator, highly optimized hopefully
  */
 int64_t getPrescedence(const Token& token) {
-    //Map all operators to 
-    const std::map<Utf8String, int64_t> presMap = {
-        {"++"_utf8, 1}, {"--"_utf8, 1}, 
-        {"."_utf8, 2},
-        {"!"_utf8, 3},
-        {"*"_utf8, 4}, {"/"_utf8, 4}, {"%"_utf8, 4},
-        {"+"_utf8, 5}, {"-"_utf8, 5},
-        {"<"_utf8, 6}, {"<="_utf8, 6},
-        {">"_utf8, 7}, {">="_utf8, 7},
-        {"=="_utf8, 8}, {"!="_utf8, 8},
-        {"="_utf8, 9},
-        {"+="_utf8, 10}, {"-="_utf8, 10},
-        {"*="_utf8, 11}, {"/="_utf8, 11}
-    };
-
-    //Check prescedence, overriding in the case of function calls
-    if (token.type == TokenType::FuncCall) {
-        return 1;
-    } else {
-        for (const auto& pair : presMap) {
-            if (pair.first == token.text) {
-                return pair.second;
-            }
+    switch (token.type) {
+        case TokenType::FuncCall:
+        case TokenType::PostInc:
+        case TokenType::PostDec: {
+            return 1;
+        }
+        case TokenType::Period: {
+            return 2;
+        }
+        case TokenType::LogNot: {
+            return 3;
+        }
+        case TokenType::Mul:
+        case TokenType::Div:
+        case TokenType::Mod: {
+            return 4;
+        }
+        case TokenType::Add:
+        case TokenType::Sub: {
+            return 5;
+        }
+        case TokenType::LessThan:
+        case TokenType::LessEqual: {
+            return 6;
+        }
+        case TokenType::GreaterThan:
+        case TokenType::GreaterEqual: {
+            return 7;
+        }
+        case TokenType::Equals:
+        case TokenType::NotEquals: {
+            return 8;
+        }
+        case TokenType::Assign: {
+            return 9;
+        }
+        case TokenType::AddAssign:
+        case TokenType::SubAssign: {
+            return 10;
+        }
+        case TokenType::MulAssign:
+        case TokenType::DivAssign: {
+            return 11;
+        }
+        default: {
+            return -1;
         }
     }
-
-    //Its nothing
-    return -1;
 }
 
 /*======================================================================================================*/

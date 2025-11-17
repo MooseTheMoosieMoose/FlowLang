@@ -28,6 +28,27 @@ enum class TokenType {
     //General Operators
     Operator,
     FuncCall, //Invoked when an open paren happens after an identifier
+    PostInc,
+    PostDec,
+    Period,
+    LogNot,
+    Mul,
+    Div,
+    Mod,
+    Add,
+    Sub,
+    LessThan,
+    LessEqual,
+    GreaterThan,
+    GreaterEqual,
+    Equals,
+    NotEquals,
+    Assign,
+    AddAssign,
+    SubAssign,
+    MulAssign,
+    DivAssign,
+
 
     //Comma
     Comma,
