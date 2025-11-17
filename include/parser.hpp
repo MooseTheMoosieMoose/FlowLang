@@ -46,8 +46,11 @@ public:
         auto result = parseGlobal(Span<Token>(tokens.data(), tokens.size()));
         if (!result.isOk()) {
             ast.clear();
+            return Result<ASTNode*, Utf8String>::Err(result.errValue());
+        } else {
+            std::cout << "AST has " << ast.size() << " Nodes" << std::endl;
+            return Result<ASTNode*, Utf8String>::Ok(&ast[0]);
         }
-        return Result<ASTNode*, Utf8String>::Ok(&ast[0]);
     }
 
     /**

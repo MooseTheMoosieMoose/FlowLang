@@ -353,10 +353,16 @@ std::optional<Utf8String> FlowParser::parseExprs(size_t parent, const Span<Token
             //Our next line is simply an expression
             int64_t endOfLine = seekNext(tokens.subspan(curTokenIndx), TokenType::EOL);
             if (endOfLine == -1) {
+
                 return std::optional("Unbounded expression, are you missing an end of line?"_utf8);
             }
 
             //Parse the expression tree
+            std::cout << "Parsing new Expression for tokens: " << std::endl;
+            for (const auto& t : tokens.subspan(curTokenIndx, endOfLine)) {
+                std::cout << t << std::endl;
+            }
+            std::cout << "end expression tokens" << std::endl;
             auto exprTree = parseExpr(tokens.subspan(curTokenIndx, endOfLine));
             if (!exprTree.isOk()) {
                 return std::optional(exprTree.errValue());

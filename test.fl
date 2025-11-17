@@ -1,3 +1,4 @@
 func main() returns none
     foo = (5.5 + 7) * 9;
+    bar = 9 * 8;
 end
