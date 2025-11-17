@@ -93,6 +93,11 @@ private:
     ParseResult parseExpr(const Span<Token>& tokens);
 
     /**
+     * @brief parses a binary infix expression like a + b
+     */
+    ParseResult parseBinaryExpr(size_t nextOp, const Span<Token>& tokens);
+
+    /**
      * @brief inserts a new child into the parser AST
      * @note uses emplace so that hopefully each AST node is only constructed once
      */

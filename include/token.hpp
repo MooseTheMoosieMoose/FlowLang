@@ -89,6 +89,26 @@ enum class TokenType {
 };
 
 /**
+ * @brief An enum covering the possible binding orientations of an operator
+ */
+enum class BindingType {
+    // Op
+    Unbound,
+
+    // Op(a, b, c, d)
+    Functional,
+
+    // Op a
+    RightUnary,
+
+    // a Op
+    LeftUnary,
+
+    //a Op b
+    BinaryInfix
+};
+
+/**
  * @brief an override on the output stream to make debugging easier for tokens
  */
 std::ostream& operator<<(std::ostream& os, const TokenType token);

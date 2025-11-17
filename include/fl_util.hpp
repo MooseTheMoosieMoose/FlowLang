@@ -250,22 +250,22 @@ public:
     }
 
     /**
-     * @brief creates a subspan from `ptr + startIndx` to `ptr + endIndx`
+     * @brief creates a subspan from `ptr + startIndx`, with count elements
      * @warning startIndx should be less than endIndx!
      */
-    Span subspan(size_t startIndx, size_t endIndx) const {
+    Span subspan(size_t startIndx, size_t count) const {
         // //TODO maybe make this return a Result over an error?
-        if ((endIndx < startIndx) || (startIndx > len) || (endIndx > len)) {
-            throw std::runtime_error("Subspan parameters out of range!");
-        }
-        return Span((ptr + startIndx), endIndx);
+        // if ((endIndx < startIndx) || (startIndx > len) || (endIndx > len)) {
+        //     throw std::runtime_error("Subspan parameters out of range!");
+        // }
+        return Span((ptr + startIndx), count);
     }
 
     /**
      * @brief an alternative for the default subspan that takes to the end
      */
-        Span subspan(size_t startIndx) const {
-        return Span((ptr + startIndx), len);
+    Span subspan(size_t startIndx) const {
+        return Span((ptr + startIndx), len - startIndx);
     }
 
 private:

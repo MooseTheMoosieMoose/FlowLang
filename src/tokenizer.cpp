@@ -52,13 +52,6 @@ static constexpr bool isNumber(uChar c) {
 }
 
 /**
- * @brief checks if a given uChar could be part of a numerical literal, i.e its a number or a period
- */
-static constexpr bool isNumberOrPeriod(uChar c) {
-    return (isNumber(c) || c == "."_u);
-}
-
-/**
  * @brief checks if a given uChar is a whitespace, which is either an ascii space,
  * ascii newline, ascii tab or ascii linefeed
  */
@@ -126,7 +119,7 @@ static constexpr bool isIdentifier(uChar c) {
     return (c.writeSize() > 2) ? true : 
                     (!isWhitespace(c) && 
                     !isOperatorChar(c) && 
-                    !isNumberOrPeriod(c) &&
+                    !isNumber(c) &&
                     !isReservedChar(c) &&
                     isntDoubleQuotes(c)) &&
                     isntTag(c);
@@ -188,7 +181,7 @@ Result<std::vector<Token>, Utf8String> tokenize(const Utf8String& text) {
         {"let"_utf8, TokenType::Let}, {"end"_utf8, TokenType::End}
     };
 
-    const std::map<Utf8String, TokenType> presMap = {
+    const std::map<Utf8String, TokenType> validOperators = {
         {"++"_utf8, TokenType::PostInc}, {"--"_utf8, TokenType::PostDec}, 
         {"."_utf8, TokenType::Period},
         {"!"_utf8, TokenType::LogNot},
@@ -232,19 +225,27 @@ Result<std::vector<Token>, Utf8String> tokenize(const Utf8String& text) {
 
             //Test to see if operator is valid
             auto testView = Utf8StringView(text, lastPos, curPos);
-            for (const auto& pair : keywordMap) {
+            for (const auto& pair : validOperators) {
                 if (testView == pair.first) {
                     newType = pair.second;
                     break;
                 }
             }
+
             if (newType == TokenType::Operator) {
                 return Result<std::vector<Token>, Utf8String>::Err("Illegal Operator!"_utf8);
             }
 
         } else if (isNumber(curChar)) {
-            curPos = countTakeWhile(text, curPos, isNumberOrPeriod);
+
+            curPos = countTakeWhile(text, curPos, isNumber);
+            //Check for decimal numbers
+            if ((text.getCharCount() > (curPos + 1)) && (text[curPos] == "."_u)) {
+                curPos++; //Skip past the period;
+                curPos = countTakeWhile(text, curPos, isNumber);
+            }
             newType = TokenType::Number;
+
         } else if (curChar == "\""_u) {
             size_t savedPos = curPos; //remmeber this for erros later
             curPos = countTakeWhile(text, curPos + 1, isntDoubleQuotes) + 1;
@@ -254,7 +255,6 @@ Result<std::vector<Token>, Utf8String> tokenize(const Utf8String& text) {
             newType = TokenType::StringLit;
         } else if (singleCharTokenMap.contains(curChar)) {
             curPos++;
-
             //Conditionally change identifiers to function calls
             if (curChar == "("_u && tokens.back().type == TokenType::Identifier) {
                 tokens.back().type = TokenType::FuncCall;

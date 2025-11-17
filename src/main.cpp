@@ -35,7 +35,7 @@ int main() {
 
     std::cout << "Parser finished!" << std::endl;
     if (head.isOk()) {
-        //parser.log();
+        parser.log();
     } else {
         std::cout << "Parser Failure: " << head.errValue() << std::endl;
         return 1;

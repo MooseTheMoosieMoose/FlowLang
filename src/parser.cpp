@@ -37,8 +37,9 @@ size_t FlowParser::addAstNode(const Token* newNodeBody, int64_t newParent) {
 /**
  * @brief gets the prescedence of an operator, highly optimized hopefully
  */
-int64_t getPrescedence(const Token& token) {
+constexpr int64_t getPrescedence(const Token& token) {
     switch (token.type) {
+        case TokenType::Let:
         case TokenType::FuncCall:
         case TokenType::PostInc:
         case TokenType::PostDec: {
@@ -86,6 +87,72 @@ int64_t getPrescedence(const Token& token) {
             return -1;
         }
     }
+}
+
+constexpr BindingType getBindingType(const Token& t) {
+    switch (t.type) {
+        case TokenType::FuncCall: {
+            return BindingType::Functional;
+        }
+        case TokenType::PostInc:
+        case TokenType::PostDec: {
+            return BindingType::LeftUnary;
+        }
+        case TokenType::Let:
+        case TokenType::LogNot: {
+            return BindingType::RightUnary;
+        }
+        case TokenType::Add:
+        case TokenType::Sub:
+        case TokenType::Mul:
+        case TokenType::Div:
+        case TokenType::Mod:
+        case TokenType::LessThan:
+        case TokenType::LessEqual:
+        case TokenType::GreaterThan:
+        case TokenType::GreaterEqual:
+        case TokenType::Assign:
+        case TokenType::Equals:
+        case TokenType::NotEquals:
+        case TokenType::AddAssign:
+        case TokenType::SubAssign:
+        case TokenType::MulAssign:
+        case TokenType::DivAssign:
+        case TokenType::Period: {
+            return BindingType::BinaryInfix;
+        }
+        default: {
+            return BindingType::Unbound;
+        }
+    }
+}
+
+Result<int64_t, Utf8String> findNextOp(const Span<Token>& tokens) {
+    int64_t nextOpPres = 0;    //The raw pres of the next op
+    int64_t nextOpPPower = INT64_MAX;  //The number of parenthesis around next op
+    int64_t nextOpIndx = -1;   //The index of the next op
+    int64_t currentPPower = 0; //The current pLevel
+    for (int i = 0; i < tokens.size(); i++) {
+        const auto& t = tokens[i];
+        if (t.type == TokenType::OpenParen) {
+            currentPPower++;
+            continue;
+        } else if (t.type == TokenType::CloseParen) {
+            currentPPower--;
+            if (currentPPower < 0) {
+                return Result<int64_t, Utf8String>::Err("Mismatched parenthesis for expression!"_utf8);
+            }
+            continue;
+        } else {
+            int64_t thisPres = getPrescedence(t);
+            if ((currentPPower <= nextOpPPower) && (thisPres > nextOpPres)) {
+                nextOpPPower = currentPPower;
+                nextOpPres = thisPres;
+                nextOpIndx = i;
+            }
+        }
+    }
+    return Result<int64_t, Utf8String>::Ok(nextOpIndx);
 }
 
 /*======================================================================================================*/
@@ -195,7 +262,6 @@ ParseResult FlowParser::parseGlobal(const Span<Token>& tokens) {
 
             //Advance to the next token type
             curTokenIndx += end + 1; //Advance past this section
-            std::cout << "Parsed one block!" << std::endl;
         }
         else {
             std::cout << "Illegal top level token: " << tokens[curTokenIndx] << std::endl;
@@ -291,7 +357,7 @@ std::optional<Utf8String> FlowParser::parseExprs(size_t parent, const Span<Token
             }
 
             //Parse the expression tree
-            auto exprTree = parseExpr(tokens.subspan(curTokenIndx, curTokenIndx + endOfLine));
+            auto exprTree = parseExpr(tokens.subspan(curTokenIndx, endOfLine));
             if (!exprTree.isOk()) {
                 return std::optional(exprTree.errValue());
             }
@@ -307,7 +373,69 @@ std::optional<Utf8String> FlowParser::parseExprs(size_t parent, const Span<Token
 }
 
 ParseResult FlowParser::parseExpr(const Span<Token>& tokens) {
+    //Check to see if tokens is just a constant, or there is an error in the parsing code
+    size_t tokenCount = tokens.size();
+    if (tokenCount == 0) {
+        //Todo this might actually be dead code, will need to experiment more
+        return ParseResult::Err("Attempted to parse a zero token expression!"_utf8);
+    } else if (tokenCount == 1) {
+        size_t tNode = addAstNode(&tokens[0]);
+        return ParseResult::Ok(tNode);
+    }
 
+    //Scan for the operator to act upon
+    auto nextOp = findNextOp(tokens);
+    if (!nextOp.isOk()) {
+        return ParseResult::Err(nextOp.errValue());
+    }
+
+    //Unwrap the next op and see what we are dealing with
+    int64_t nextOpIndx = nextOp.okValue();
+    if (nextOpIndx == -1) {
+        //No operators, error
+        return ParseResult::Err("Expected to see an operator!"_utf8);
+    }
+
+    //Lets dispatch these based on binding direction
+    BindingType bindType = getBindingType(tokens[nextOpIndx]);
+    switch (bindType) {
+        case BindingType::BinaryInfix: {
+            //If we have a binary operator next, then we have to parse that
+            auto binaryRes = parseBinaryExpr(nextOpIndx, tokens);
+            return binaryRes;
+        }
+    }
+
+
+    return ParseResult::Err("Invalid Expression: Generic Flavour!"_utf8);
+}
+
+ParseResult FlowParser::parseBinaryExpr(size_t nextOp, const Span<Token>& tokens) {
+    //Since this is binary we create a new head representing the op
+    size_t newHead = addAstNode(&tokens[nextOp]);
+
+    //And parse everything to the left of it
+    if (nextOp == 0) {
+        return ParseResult::Err("Expected to see an operand to the left of binary infix operator!"_utf8);
+    }
+    auto lhs = parseExpr(tokens.subspan(0, nextOp));
+    if (!lhs.isOk()) {
+        return lhs;
+    }
+    ast[newHead].addChild(lhs.okValue());
+
+    //And parse everything to the right of it
+    if (nextOp == (tokens.size() - 1)) {
+        return ParseResult::Err("Expected to see an operand to the right of binary infix operator!"_utf8);
+    }
+    auto rhs = parseExpr(tokens.subspan(nextOp + 1));
+    if (!rhs.isOk()) {
+        return lhs;
+    }
+    ast[newHead].addChild(rhs.okValue());
+
+    //Full binary expression parsed succsessfully
+    return ParseResult::Ok(newHead);
 }
 
 } //end namespace fl
