@@ -10,7 +10,12 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 
 #include "ast_node.hpp"
 #include "fl_util.hpp"
-#include <optional>
+#include <map>
+
+/**
+ * @brief REMOVE AFTER DEBUGGING
+ */
+#include <iostream>
 
 namespace fl {
 
@@ -21,7 +26,7 @@ namespace fl {
 /**
  * @brief a type alias to make writing the parsers cleaner
  */
-using ParseResult = Result<ASTNode&, Utf8String>;
+using ParseResult = Result<size_t, Utf8String>;
 
 /**
  * @brief an object to parse the entire contents of a token stream
@@ -33,21 +38,57 @@ public:
     FlowParser() noexcept {}
 
     /**
-     * @brief parseGlobal is meant to be called on the global scope of a file,
-     * and implement a more traditional recursive descent approach
-     * @returns a result covering either the whole global AST or an error message
+     * @brief a saftey wrapper over the internal parseGlobal to ensure that any upwards propogated
+     * errors results in clearing the internal data of the parser
      */
-    ParseResult parseGlobal(const Span<Token>& tokens);
+    inline Result<ASTNode*, Utf8String> parse(std::vector<Token>& tokens) {
+        auto result = parseGlobal(Span<Token>(tokens.data(), tokens.size()));
+        if (!result.isOk()) {
+            ast.clear();
+        }
+        return Result<ASTNode*, Utf8String>::Ok(&ast[0]);
+    }
+
+    /**
+     * @brief displays an AST
+     */
+    void log(int depth = 0, int index = 0) {
+        for (int i = 0; i < depth; i++) {
+            std::cout << "-";
+        }
+        std::cout << "> " << ast[index].body.text << std::endl;
+
+        for (auto& c : ast[index].children) {
+            log(depth + 1, c);
+        }
+    }
 
 private:
     //This is built up as a flat tree for cache locality
     std::vector<ASTNode> ast;
 
+    //A map which takes in a given functions name and returns its parse tree
+    std::map<Utf8StringView, size_t> functionDecs;
+
+    /**
+     * @brief performs all the heavy lifting over actually parsing anything
+     */
+    ParseResult parseGlobal(const Span<Token>& tokens);
+
+    /**
+     * @brief provides the initial structural parsing of a top level function block
+     */
+    ParseResult parseFunc(const Span<Token>& tokens);
+
+    /**
+     * @brief
+     */
+
     /**
      * @brief inserts a new child into the parser AST
      * @note uses emplace so that hopefully each AST node is only constructed once
      */
-    ASTNode& addAstNode(const Token& body = Token{}, std::vector<ASTNode&> children = std::vector<ASTNode&>{});
+    size_t addAstNode(const Token* newNodeBody = nullptr, int64_t newParent = -1);
 };
 
 

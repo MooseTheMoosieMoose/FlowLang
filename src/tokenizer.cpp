@@ -105,6 +105,7 @@ static constexpr bool isReservedChar(uChar c) {
         case "{"_u.n:
         case "}"_u.n:
         case "."_u.n:
+        case ","_u.n:
         case "\""_u.n:
         {
             return true;
@@ -167,10 +168,11 @@ Tokenizer::Tokenizer(const Utf8String& text) {
     size_t charCount = 1;
 
     const std::map<uChar, TokenType> singleCharTokenMap = {
-        {";"_u, TokenType::EOL}, {"@"_u, TokenType::Prepocessor},
+        {";"_u, TokenType::EOL}, {"@"_u, TokenType::Prepocessor}, 
         {"("_u, TokenType::OpenParen}, {")"_u, TokenType::CloseParen},
         {"["_u, TokenType::OpenSquare}, {"]"_u, TokenType::CloseSquare},
         {"{"_u, TokenType::OpenCurly}, {";"_u, TokenType::CloseCurly},
+        {","_u, TokenType::Comma},
     };
 
     const std::map<Utf8String, TokenType> keywordMap = {
@@ -178,8 +180,7 @@ Tokenizer::Tokenizer(const Utf8String& text) {
         {"then"_utf8, TokenType::Then}, {"do"_utf8, TokenType::Do},
         {"while"_utf8, TokenType::While}, {"for"_utf8, TokenType::For},
         {"import"_utf8, TokenType::Import}, {"returns"_utf8, TokenType::Returns},
-        {"let"_utf8, TokenType::Let}, {"end"_utf8, TokenType::End},
-        {"num"_utf8, TokenType::Num}, {"none"_utf8, TokenType::None}
+        {"let"_utf8, TokenType::Let}, {"end"_utf8, TokenType::End}
     };
 
     const size_t maxCharCount = text.getCharCount();

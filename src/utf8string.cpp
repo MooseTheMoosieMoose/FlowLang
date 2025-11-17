@@ -197,4 +197,17 @@ bool Utf8StringView::operator==(const Utf8String& other) const {
     return (other.data.size() == len) && (std::equal(other.data.begin(), other.data.end(), start, start + len));
 }
 
+bool Utf8StringView::operator<(const Utf8StringView& other) const {
+    const size_t minLen = std::min(len, other.len);
+    int res = std::memcmp(start, other.start, minLen);
+
+    //Check to see if the bytes are NOT equal
+    if (res != 0) {
+        //return true when res < 0, which means that first different byte is in this, not other
+        return res < 0;
+    }
+    //If the bytes are equal then we should return whichever one is shorter
+    return len < other.len;
+}
+
 } //end namespace fl

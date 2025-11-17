@@ -28,6 +28,9 @@ enum class TokenType {
     //General Operators
     Operator,
 
+    //Comma
+    Comma,
+
     //Reserved Words
     Func,
     End,
@@ -42,8 +45,6 @@ enum class TokenType {
 
     //All other words
     Identifier,
-    Num,
-    None,
 
     //Literals
     Number,

@@ -25,13 +25,13 @@ int main() {
     auto tokens = tokenizer.getTokens();
 
     auto parser = FlowParser();
-    auto head = parser.parseGlobal(Span<Token>(tokens.data(), tokens.size()));
+    auto head = parser.parse(tokens);
 
     std::cout << "Parser finished!" << std::endl;
-    if (head.has_value()) {
-        std::cout << "Error: " << head.value() << std::endl;
+    if (head.isOk()) {
+        parser.log();
     } else {
-        std::cout << "Yippee!" << std::endl;
+        std::cout << "Parser Failure: " << head.errValue() << std::endl;
     }
 
     return 0;

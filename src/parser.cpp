@@ -12,15 +12,31 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 #include "fl_util.hpp"
 #include <stdint.h>
 
+/**
+ * @todo REMOVE AFTER TESTING
+ */
+#include <iostream> 
+
 namespace fl {
 
 /*======================================================================================================*/
 /*                                     General Parser Tools                                             */
 /*======================================================================================================*/
 
-ASTNode& FlowParser::addAstNode(const Token& body = Token{}, std::vector<ASTNode&> children = std::vector<ASTNode&>{}) {
-    ast.emplace_back(ASTNode{.body = body, .children = children});
-    return ast.back();
+size_t FlowParser::addAstNode(const Token* newNodeBody, int64_t newParent) {
+    if (newNodeBody != nullptr) {
+        ast.emplace_back(ASTNode{.body = *newNodeBody});
+    } else {
+        ast.emplace_back(ASTNode{.body = Token{}});
+    }
+
+    const size_t newChildIndx = ast.size() - 1;
+
+    if (newParent != -1) {
+        ast[newParent].children.push_back(newChildIndx);
+    }
+    
+    return newChildIndx; //Get the last element index
 }
 
 /*======================================================================================================*/
@@ -31,6 +47,7 @@ ASTNode& FlowParser::addAstNode(const Token& body = Token{}, std::vector<ASTNode
  * @brief will seek through a span to find the next balanced token based on an open and close
  * Balanced token refers to some set with a defined way to open and close, i.e every func must
  * match with an end, and every { must match with a }
+ * @note this should have an open token at span[0] and will return the index directly before the matching end
  * @returns an int64_t with the offset from the begining of `tokens` where the matching token is, -1 if err
  */
 static constexpr int64_t seekNextBalanced(const Span<Token>& tokens, TokenType open, TokenType close) {
@@ -101,23 +118,81 @@ static constexpr int64_t seekNext(const Span<Token>& tokens, TokenType search) {
 /*                                          Parsers                                                     */
 /*======================================================================================================*/
 
-ParseResult parseFunc(const Span<Token>& tokens) {
+ParseResult FlowParser::parseFunc(const Span<Token>& tokens) {
+    size_t tokenCount = tokens.size();
     //Tokens contains the entire contents of a function body, so the node we want to return is at the top level,
-    //a func token, which is at 0
+    //a func token, which is at 0, which we know exists becuase it came down from the top level parser
+    size_t funcHead = addAstNode(&tokens[0]);
 
-    //We then expect an identifier for the function itself as the next token
+    //The first child must then be the function name, which is the next token
+    if ((tokenCount < 2) || (tokens[1].type != TokenType::Identifier)) {
+        return ParseResult::Err("Function declaration is missing a name!"_utf8);
+    }
+    size_t funcName = addAstNode(&tokens[1], funcHead);
+
+    //Next we should expect a parenthesis
+    if ((tokenCount < 3) || (tokens[2].type != TokenType::OpenParen)) {
+        return ParseResult::Err("Function declaration expects a parenthetical parameter list, did you forget a `(`?"_utf8);
+    }
+
+    //Now we should expect to see an arg list until we hit a close paren, lets look for that
+    int64_t closeParen = seekNextBalanced(tokens.subspan(2), TokenType::OpenParen, TokenType::CloseParen);
+    if (closeParen == -1) {
+        return ParseResult::Err("Function declaration parameter list is missing a closing parenthesis!"_utf8);
+    }
+    closeParen += 2; //Adjust to make it relative to the whole expression
+
+    //Before we get our parameters, lets capture our return type
+    bool retCheck = (tokenCount < closeParen + 2) || 
+                    (tokens[closeParen + 1].type != TokenType::Returns);
+    if (retCheck) {
+        return ParseResult::Err("Function declaration is missing a return type!"_utf8);
+    }
+    size_t retType = addAstNode(&tokens[closeParen + 2], funcHead);
+
+    //Now we can walk through the pairs of [type, identifier, comma?] in the parameter list and add them
+    int curTokenIndx = 3;
+    while (curTokenIndx < closeParen) {
+        if (tokens[curTokenIndx].type != TokenType::Identifier) {
+            return ParseResult::Err("Expected to see a parameter type!"_utf8);
+        }
+        addAstNode(&tokens[curTokenIndx], funcHead);
+        curTokenIndx++;
+
+        if (tokens[curTokenIndx].type != TokenType::Identifier) {
+            return ParseResult::Err("Expected to see a parameter name!"_utf8);
+        }
+        addAstNode(&tokens[curTokenIndx], funcHead);
+        curTokenIndx++;
+
+        if (curTokenIndx != closeParen) {
+            if (tokens[curTokenIndx].type != TokenType::Comma) {
+                return ParseResult::Err("Expected to see a comma!"_utf8);
+            }
+            curTokenIndx++;
+        }
+    }
+
+    //Now "all" thats left is the actual body of the function, which consists of expressions and blocks
+    // int curTokenIndx = closeParen + 4;
+    // while (curTokenIndx < tokenCount) {
+    //     auto firstToken = 
+    // }
     
+    //Everything was good, return the new tree, and add this node to our top level registry of functions
+    functionDecs.insert({ast[funcName].body.text, funcHead});
+    return ParseResult::Ok(funcHead);
 }
 
 ParseResult FlowParser::parseGlobal(const Span<Token>& tokens) {
     //Create an initial empty head to put all top level compilation frags into
-    ASTNode& globalHead = addAstNode();
+    size_t globalHead = addAstNode();
 
-    for (int i = 0; i < tokens.size(); i++) {
-        const Token& token = tokens[i];
-        if (token.type == TokenType::Func) {
+    int curTokenIndx = 0;
+    while (curTokenIndx < tokens.size()) {
+        if (tokens[curTokenIndx].type == TokenType::Func) {
             //Seek the matching end to this function block
-            int64_t end = seekNextBlockEnd(tokens);
+            int64_t end = seekNextBlockEnd(tokens.subspan(curTokenIndx));
 
             //Err if not found
             if (end == -1) {
@@ -125,7 +200,7 @@ ParseResult FlowParser::parseGlobal(const Span<Token>& tokens) {
             }
 
             //Otherwise, parse the function block
-            auto funcTree = parseFunc(tokens.subspan(i, end));
+            auto funcTree = parseFunc(tokens.subspan(curTokenIndx, curTokenIndx + end));
 
             //Check to ensure that the function parsing went good
             if (!funcTree.isOk()) {
@@ -133,10 +208,15 @@ ParseResult FlowParser::parseGlobal(const Span<Token>& tokens) {
             }
 
             //Everything is valid, we have a func head node ready to get pushed up
-            globalHead.addChild(funcTree.okValue());
+            ast[globalHead].addChild(funcTree.okValue());
 
             //Advance to the next token type
-            i = end; //Advance past this section
+            curTokenIndx = curTokenIndx + end + 1; //Advance past this section
+            std::cout << "Parsed one block!" << std::endl;
+        }
+        else {
+            std::cout << "Illegal top level token: " << tokens[curTokenIndx] << std::endl;
+            curTokenIndx++;
         }
     }
 

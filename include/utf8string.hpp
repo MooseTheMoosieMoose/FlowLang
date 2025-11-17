@@ -272,6 +272,11 @@ public:
     bool operator==(const Utf8String& other) const;
 
     /**
+     * @brief provides a lexigraphical compare between two string views so they can be used as map keys
+     */
+    bool operator<(const Utf8StringView& other) const;
+
+    /**
      * @brief provides subscript access (non owning only) to a given view
      */
     const uChar& operator[](size_t index) const;

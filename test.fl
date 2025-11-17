@@ -4,3 +4,6 @@
 func main() returns none
     let num Αλφα = (4 + 7) * 8 - 3;
 end
+
+func otherFunc(foo bar, num glorp) returns retType
+end

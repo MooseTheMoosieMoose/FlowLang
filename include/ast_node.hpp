@@ -27,30 +27,13 @@ namespace fl {
 struct ASTNode {
 public:
     Token body;
-    std::vector<ASTNode&> children;
+    std::vector<size_t> children;
 
     /**
      * @brief a nice shortcut to add a child to a given node
      */
-    constexpr void addChild(ASTNode& newChildRef) noexcept {
-        children.push_back(newChildRef);
-    }
-
-    /**
-     * @brief a simple logging function that pretty (ish) prints the contents
-     * of a node and all its children recursivly
-     */
-    void log(int depth = 0) {
-        if (!body.text.isEmpty()) {
-            for (int i = 0; i < depth; i++) {
-                std::cout << "-";
-            }
-            std::cout << "> " << body.text << std::endl;
-        }
-        
-        for (auto& c : children) {
-            c.log(depth + 1);
-        }
+    constexpr void addChild(size_t childIndx) noexcept {
+        children.push_back(childIndx);
     }
 };
 
