@@ -38,6 +38,8 @@ enum class TokenType {
     Let,
     Import,
     If,
+    Elif,
+    Else,
     Then,
     For,
     While,

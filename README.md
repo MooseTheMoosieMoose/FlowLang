@@ -7,7 +7,10 @@ I dont usually post any of my projects onto public repositories for a few reason
 **Project wide Documentation**
 * [ ] add docs and rationale for the bytecode compiler
     * [ ] create docs and rationale for AST structures
-        * [x] create d & r for functions in the AST
+        * [x] create d & r for `func` in the AST
+        * [x] create d & r for `for` loops in the AST
+        * [x] create d & r for `while` loops in the AST
+        * [x] create d & r for `if`, `elif`, and `else` blocks in the AST
 
 **Bytecode Compiler**
 * [x] implement a utf8 string and string view system
@@ -21,6 +24,15 @@ I dont usually post any of my projects onto public repositories for a few reason
     * [x] built out initial seeking utilities to find matching elements in a token stream
     * [x] make sure all parsers use the new fl::Result type in error handling
     * [x] make AST generation work over a flat map for cache locality
+    * [ ] build specific parsers
+        * [x] global level parser
+        * [x] function level parser
+        * [ ] expression/block level parsers
+            * [ ] if-elif-else parser
+            * [ ] for loop parser
+            * [ ] while loop parser
+            * [ ] expression parser
+        * [ ] preprocessor parser
     * [ ] develop a more robust testing framework for parser results
     * [ ] propogate error messages up the parser chain
 * [ ] create a standard for the bytecode

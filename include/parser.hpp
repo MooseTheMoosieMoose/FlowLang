@@ -11,6 +11,7 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 #include "ast_node.hpp"
 #include "fl_util.hpp"
 #include <map>
+#include <optional>
 
 /**
  * @brief REMOVE AFTER DEBUGGING
@@ -81,8 +82,9 @@ private:
     ParseResult parseFunc(const Span<Token>& tokens);
 
     /**
-     * @brief
+     * @brief parses lines of blocks / expressions into children of a given node
      */
+    std::optional<Utf8String> parseExprs(size_t parent, const Span<Token>& tokens);
 
     /**
      * @brief inserts a new child into the parser AST

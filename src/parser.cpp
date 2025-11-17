@@ -12,11 +12,6 @@ This software is licensed under the BSD 3-Clause License, which can be found in 
 #include "fl_util.hpp"
 #include <stdint.h>
 
-/**
- * @todo REMOVE AFTER TESTING
- */
-#include <iostream> 
-
 namespace fl {
 
 /*======================================================================================================*/
@@ -118,6 +113,46 @@ static constexpr int64_t seekNext(const Span<Token>& tokens, TokenType search) {
 /*                                          Parsers                                                     */
 /*======================================================================================================*/
 
+ParseResult FlowParser::parseGlobal(const Span<Token>& tokens) {
+    //Create an initial empty head to put all top level compilation frags into
+    size_t globalHead = addAstNode();
+
+    int curTokenIndx = 0;
+    while (curTokenIndx < tokens.size()) {
+        if (tokens[curTokenIndx].type == TokenType::Func) {
+            //Seek the matching end to this function block
+            int64_t end = seekNextBlockEnd(tokens.subspan(curTokenIndx));
+
+            //Err if not found
+            if (end == -1) {
+                return ParseResult::Err("Function block opened but improperly closed, are you missing an end token?"_utf8);
+            }
+
+            //Otherwise, parse the function block
+            auto funcTree = parseFunc(tokens.subspan(curTokenIndx, curTokenIndx + end));
+
+            //Check to ensure that the function parsing went good
+            if (!funcTree.isOk()) {
+                return ParseResult::Err(funcTree.errValue());
+            }
+
+            //Everything is valid, we have a func head node ready to get pushed up
+            ast[globalHead].addChild(funcTree.okValue());
+
+            //Advance to the next token type
+            curTokenIndx = curTokenIndx + end + 1; //Advance past this section
+            std::cout << "Parsed one block!" << std::endl;
+        }
+        else {
+            std::cout << "Illegal top level token: " << tokens[curTokenIndx] << std::endl;
+            curTokenIndx++;
+        }
+    }
+
+    //All parsing is aOk, we can return
+    return ParseResult::Ok(globalHead);
+}
+
 ParseResult FlowParser::parseFunc(const Span<Token>& tokens) {
     size_t tokenCount = tokens.size();
     //Tokens contains the entire contents of a function body, so the node we want to return is at the top level,
@@ -174,54 +209,31 @@ ParseResult FlowParser::parseFunc(const Span<Token>& tokens) {
     }
 
     //Now "all" thats left is the actual body of the function, which consists of expressions and blocks
-    // int curTokenIndx = closeParen + 4;
-    // while (curTokenIndx < tokenCount) {
-    //     auto firstToken = 
-    // }
+    std::optional<Utf8String> exprError = parseExprs(funcName, tokens.subspan(closeParen + 3));
+    if (exprError.has_value()) {
+        return ParseResult::Err(exprError.value());
+    }
     
     //Everything was good, return the new tree, and add this node to our top level registry of functions
     functionDecs.insert({ast[funcName].body.text, funcHead});
     return ParseResult::Ok(funcHead);
 }
 
-ParseResult FlowParser::parseGlobal(const Span<Token>& tokens) {
-    //Create an initial empty head to put all top level compilation frags into
-    size_t globalHead = addAstNode();
-
-    int curTokenIndx = 0;
+std::optional<Utf8String> FlowParser::parseExprs(size_t parent, const Span<Token>& tokens) {
+    size_t curTokenIndx = 0;
     while (curTokenIndx < tokens.size()) {
-        if (tokens[curTokenIndx].type == TokenType::Func) {
-            //Seek the matching end to this function block
-            int64_t end = seekNextBlockEnd(tokens.subspan(curTokenIndx));
+        const Token& nextExprStart = tokens[curTokenIndx];
+        if (nextExprStart.type == TokenType::If) {
 
-            //Err if not found
-            if (end == -1) {
-                return ParseResult::Err("Function block opened but improperly closed, are you missing an end token?"_utf8);
-            }
+        } else if (nextExprStart.type == TokenType::For) {
 
-            //Otherwise, parse the function block
-            auto funcTree = parseFunc(tokens.subspan(curTokenIndx, curTokenIndx + end));
+        } else if (nextExprStart.type == TokenType::While) {
 
-            //Check to ensure that the function parsing went good
-            if (!funcTree.isOk()) {
-                return ParseResult::Err(funcTree.errValue());
-            }
-
-            //Everything is valid, we have a func head node ready to get pushed up
-            ast[globalHead].addChild(funcTree.okValue());
-
-            //Advance to the next token type
-            curTokenIndx = curTokenIndx + end + 1; //Advance past this section
-            std::cout << "Parsed one block!" << std::endl;
-        }
-        else {
-            std::cout << "Illegal top level token: " << tokens[curTokenIndx] << std::endl;
-            curTokenIndx++;
+        } else {
+            //Our next line is simply an expression
+            
         }
     }
-
-    //All parsing is aOk, we can return
-    return ParseResult::Ok(globalHead);
 }
 
 } //end namespace fl

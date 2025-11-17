@@ -177,6 +177,7 @@ Tokenizer::Tokenizer(const Utf8String& text) {
 
     const std::map<Utf8String, TokenType> keywordMap = {
         {"func"_utf8, TokenType::Func}, {"if"_utf8, TokenType::If},
+        {"elif"_utf8, TokenType::Elif}, {"else"_utf8, TokenType::Else},
         {"then"_utf8, TokenType::Then}, {"do"_utf8, TokenType::Do},
         {"while"_utf8, TokenType::While}, {"for"_utf8, TokenType::For},
         {"import"_utf8, TokenType::Import}, {"returns"_utf8, TokenType::Returns},
