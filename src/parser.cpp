@@ -145,7 +145,14 @@ Result<int64_t, Utf8String> findNextOp(const Span<Token>& tokens) {
             continue;
         } else {
             int64_t thisPres = getPrescedence(t);
-            if ((currentPPower <= nextOpPPower) && (thisPres > nextOpPres)) {
+            //If there is strictly less parenthesis it should always be run first
+            if (currentPPower < nextOpPPower) {
+                nextOpPPower = currentPPower;
+                nextOpPres = thisPres;
+                nextOpIndx = i;
+                
+            //If they are equal in parenthetical power, then we care about operator prescedence
+            } else if ((currentPPower == nextOpPPower) && (thisPres > nextOpPres)) {
                 nextOpPPower = currentPPower;
                 nextOpPres = thisPres;
                 nextOpIndx = i;

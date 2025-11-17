@@ -10,4 +10,4 @@ fi
 cmake --build .
 echo "Finished!"
 
-../bin/FlowLang
+#../bin/FlowLang
