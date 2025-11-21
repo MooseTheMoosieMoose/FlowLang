@@ -15,7 +15,6 @@ int main() {
     Utf8String::setLocale();
     std::string filePath = "/mnt/c/Users/Moose/Desktop/Programming/FlowLang/test.fl";
     Utf8String fileContent = Utf8String::fromFile(filePath.c_str());
-    
 
     auto tokensRes = tokenize(fileContent);
     std::vector<Token> tokens = {};
@@ -35,7 +34,7 @@ int main() {
 
     std::cout << "Parser finished!" << std::endl;
     if (head.isOk()) {
-        parser.log();
+        //parser.log();
     } else {
         std::cout << "Parser Failure: " << head.errValue() << std::endl;
         return 1;

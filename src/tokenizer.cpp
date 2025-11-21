@@ -256,7 +256,7 @@ Result<std::vector<Token>, Utf8String> tokenize(const Utf8String& text) {
         } else if (singleCharTokenMap.contains(curChar)) {
             curPos++;
             //Conditionally change identifiers to function calls
-            if (curChar == "("_u && tokens.back().type == TokenType::Identifier) {
+            if ((tokens.size() > 0) && (curChar == "("_u) && (tokens.back().type == TokenType::Identifier)) {
                 tokens.back().type = TokenType::FuncCall;
             }
 

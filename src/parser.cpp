@@ -148,7 +148,7 @@ Result<int64_t, Utf8String> extractSingle(const Span<Token>& tokens) {
 /*                                        Seekers                                                       */
 /*======================================================================================================*/
 
-Result<int64_t, Utf8String> findNextOp(const Span<Token>& tokens) {
+int64_t findNextOp(const Span<Token>& tokens) {
     int64_t nextOpPres = 0;    //The raw pres of the next op
     int64_t nextOpPPower = INT64_MAX;  //The number of parenthesis around next op
     int64_t nextOpIndx = -1;   //The index of the next op
@@ -182,8 +182,7 @@ Result<int64_t, Utf8String> findNextOp(const Span<Token>& tokens) {
         }
     }
 
-    
-    return Result<int64_t, Utf8String>::Ok(nextOpIndx);
+    return nextOpIndx;
 }
 
 /**
@@ -406,82 +405,96 @@ std::optional<Utf8String> FlowParser::parseExprs(size_t parent, const Span<Token
 }
 
 ParseResult FlowParser::parseExpr(const Span<Token>& tokens) {
-    //Check to see if tokens is just a constant, or there is an error in the parsing code
-    size_t tokenCount = tokens.size();
-    if (tokenCount == 0) {
-        //Todo this might actually be dead code, will need to experiment more
-        return ParseResult::Err("Attempted to parse a zero token expression!"_utf8);
-    } else if (tokenCount == 1) {
-        std::cout << "Constant Node established: " << tokens[0] << std::endl;
-        size_t tNode = addAstNode(&tokens[0]);
-        return ParseResult::Ok(tNode);
+    for (const auto& t : tokens) {
+        std::cout << t << std::endl;
     }
-
-    //Scan for the operator to act upon
     auto nextOp = findNextOp(tokens);
-    if (!nextOp.isOk()) {
-        return ParseResult::Err(nextOp.errValue());
+    if (nextOp == -1) {
+        std::cout << "No ops" << std::endl;
+    } else {
+        std::cout << "Next op is in index: " << nextOp << std::endl;
     }
 
-    //Unwrap the next op and see what we are dealing with
-    int64_t nextOpIndx = nextOp.okValue();
-
-    //Check to see if the next side is just some parenthesis and a single non-parenthesis item
-    if (nextOpIndx == -1) {
-
-        //If no extra non-parenthesis item is found, err
-        auto constRes = extractSingle(tokens);
-        if (!constRes.isOk()) {
-            return ParseResult::Err(constRes.errValue());
-        }
-
-        //If all good, return our new constant node
-        size_t tNode = addAstNode(&tokens[constRes.okValue()]);
-        return ParseResult::Ok(tNode);
-    }
-
-    std::cout << "Parse expression has identified the next op: " << tokens[nextOpIndx] << std::endl;
-
-    //Lets dispatch these based on binding direction
-    BindingType bindType = getBindingType(tokens[nextOpIndx]);
-    switch (bindType) {
-        case BindingType::BinaryInfix: {
-            //If we have a binary operator next, then we have to parse that
-            auto binaryRes = parseBinaryExpr(nextOpIndx, tokens);
-            return binaryRes;
-        }
-    }
-
-
-    return ParseResult::Err("Invalid Expression: Generic Flavour!"_utf8);
+    return ParseResult::Ok(0);
 }
 
-ParseResult FlowParser::parseBinaryExpr(size_t nextOp, const Span<Token>& tokens) {
-    //Since this is binary we create a new head representing the op
-    size_t newHead = addAstNode(&tokens[nextOp]);
+// ParseResult FlowParser::parseExpr(const Span<Token>& tokens) {
+//     //Check to see if tokens is just a constant, or there is an error in the parsing code
+//     size_t tokenCount = tokens.size();
+//     if (tokenCount == 0) {
+//         //Todo this might actually be dead code, will need to experiment more
+//         return ParseResult::Err("Attempted to parse a zero token expression!"_utf8);
+//     } else if (tokenCount == 1) {
+//         std::cout << "Constant Node established: " << tokens[0] << std::endl;
+//         size_t tNode = addAstNode(&tokens[0]);
+//         return ParseResult::Ok(tNode);
+//     }
 
-    //And parse everything to the left of it
-    if (nextOp == 0) {
-        return ParseResult::Err("Expected to see an operand to the left of binary infix operator!"_utf8);
-    }
-    auto lhs = parseExpr(tokens.subspan(0, nextOp));
-    if (!lhs.isOk()) {
-        return lhs;
-    }
-    ast[newHead].addChild(lhs.okValue());
+//     //Scan for the operator to act upon
+//     auto nextOp = findNextOp(tokens);
+//     if (!nextOp.isOk()) {
+//         return ParseResult::Err(nextOp.errValue());
+//     }
 
-    //And parse everything to the right of it
-    if (nextOp == (tokens.size() - 1)) {
-        return ParseResult::Err("Expected to see an operand to the right of binary infix operator!"_utf8);
-    }
-    auto rhs = parseExpr(tokens.subspan(nextOp + 1));
-    if (!rhs.isOk()) {
-        return rhs;
-    }
-    ast[newHead].addChild(rhs.okValue());
+//     //Unwrap the next op and see what we are dealing with
+//     int64_t nextOpIndx = nextOp.okValue();
 
-    //Full binary expression parsed succsessfully
-    return ParseResult::Ok(newHead);
-}
+//     //Check to see if the next side is just some parenthesis and a single non-parenthesis item
+//     if (nextOpIndx == -1) {
+
+//         //If no extra non-parenthesis item is found, err
+//         auto constRes = extractSingle(tokens);
+//         if (!constRes.isOk()) {
+//             return ParseResult::Err(constRes.errValue());
+//         }
+
+//         //If all good, return our new constant node
+//         size_t tNode = addAstNode(&tokens[constRes.okValue()]);
+//         return ParseResult::Ok(tNode);
+//     }
+
+//     std::cout << "Parse expression has identified the next op: " << tokens[nextOpIndx] << std::endl;
+
+//     //Lets dispatch these based on binding direction
+//     BindingType bindType = getBindingType(tokens[nextOpIndx]);
+//     switch (bindType) {
+//         case BindingType::BinaryInfix: {
+//             //If we have a binary operator next, then we have to parse that
+//             auto binaryRes = parseBinaryExpr(nextOpIndx, tokens);
+//             return binaryRes;
+//         }
+//     }
+
+
+//     return ParseResult::Err("Invalid Expression: Generic Flavour!"_utf8);
+// }
+
+// ParseResult FlowParser::parseBinaryExpr(size_t nextOp, const Span<Token>& tokens) {
+//     //Since this is binary we create a new head representing the op
+//     size_t newHead = addAstNode(&tokens[nextOp]);
+
+//     //And parse everything to the left of it
+//     if (nextOp == 0) {
+//         return ParseResult::Err("Expected to see an operand to the left of binary infix operator!"_utf8);
+//     }
+//     auto lhs = parseExpr(tokens.subspan(0, nextOp));
+//     if (!lhs.isOk()) {
+//         return lhs;
+//     }
+//     ast[newHead].addChild(lhs.okValue());
+
+//     //And parse everything to the right of it
+//     if (nextOp == (tokens.size() - 1)) {
+//         return ParseResult::Err("Expected to see an operand to the right of binary infix operator!"_utf8);
+//     }
+//     auto rhs = parseExpr(tokens.subspan(nextOp + 1));
+//     if (!rhs.isOk()) {
+//         return rhs;
+//     }
+//     ast[newHead].addChild(rhs.okValue());
+
+//     //Full binary expression parsed succsessfully
+//     return ParseResult::Ok(newHead);
+// }
 
 } //end namespace fl
