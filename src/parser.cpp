@@ -127,6 +127,27 @@ constexpr BindingType getBindingType(const Token& t) {
     }
 }
 
+/**
+ * @brief loops over a set of tokens which is expected to be just constants and parenthesis
+ */
+Result<int64_t, Utf8String> extractSingle(const Span<Token>& tokens) {
+    int64_t nextConst = -1;
+    for (int i = 0; i < tokens.size(); i++) {
+        if ((tokens[i].type != TokenType::OpenParen) && (tokens[i].type != TokenType::CloseParen)) {
+            if (nextConst == -1) {
+                nextConst = i;
+            } else {
+                return Result<int64_t, Utf8String>::Err("Expected to see a single operand!"_utf8);
+            }
+        }
+    }
+    return Result<int64_t, Utf8String>::Ok(nextConst);
+}
+
+/*======================================================================================================*/
+/*                                        Seekers                                                       */
+/*======================================================================================================*/
+
 Result<int64_t, Utf8String> findNextOp(const Span<Token>& tokens) {
     int64_t nextOpPres = 0;    //The raw pres of the next op
     int64_t nextOpPPower = INT64_MAX;  //The number of parenthesis around next op
@@ -139,12 +160,13 @@ Result<int64_t, Utf8String> findNextOp(const Span<Token>& tokens) {
             continue;
         } else if (t.type == TokenType::CloseParen) {
             currentPPower--;
-            if (currentPPower < 0) {
-                return Result<int64_t, Utf8String>::Err("Mismatched parenthesis for expression!"_utf8);
-            }
             continue;
         } else {
             int64_t thisPres = getPrescedence(t);
+            //Check to see if its a non-op
+            if (thisPres == -1) {
+                continue;
+            }
             //If there is strictly less parenthesis it should always be run first
             if (currentPPower < nextOpPPower) {
                 nextOpPPower = currentPPower;
@@ -159,12 +181,10 @@ Result<int64_t, Utf8String> findNextOp(const Span<Token>& tokens) {
             }
         }
     }
+
+    
     return Result<int64_t, Utf8String>::Ok(nextOpIndx);
 }
-
-/*======================================================================================================*/
-/*                                        Seekers                                                       */
-/*======================================================================================================*/
 
 /**
  * @brief will seek through a span to find the next balanced token based on an open and close
@@ -392,6 +412,7 @@ ParseResult FlowParser::parseExpr(const Span<Token>& tokens) {
         //Todo this might actually be dead code, will need to experiment more
         return ParseResult::Err("Attempted to parse a zero token expression!"_utf8);
     } else if (tokenCount == 1) {
+        std::cout << "Constant Node established: " << tokens[0] << std::endl;
         size_t tNode = addAstNode(&tokens[0]);
         return ParseResult::Ok(tNode);
     }
@@ -404,10 +425,22 @@ ParseResult FlowParser::parseExpr(const Span<Token>& tokens) {
 
     //Unwrap the next op and see what we are dealing with
     int64_t nextOpIndx = nextOp.okValue();
+
+    //Check to see if the next side is just some parenthesis and a single non-parenthesis item
     if (nextOpIndx == -1) {
-        //No operators, error
-        return ParseResult::Err("Expected to see an operator!"_utf8);
+
+        //If no extra non-parenthesis item is found, err
+        auto constRes = extractSingle(tokens);
+        if (!constRes.isOk()) {
+            return ParseResult::Err(constRes.errValue());
+        }
+
+        //If all good, return our new constant node
+        size_t tNode = addAstNode(&tokens[constRes.okValue()]);
+        return ParseResult::Ok(tNode);
     }
+
+    std::cout << "Parse expression has identified the next op: " << tokens[nextOpIndx] << std::endl;
 
     //Lets dispatch these based on binding direction
     BindingType bindType = getBindingType(tokens[nextOpIndx]);
@@ -443,7 +476,7 @@ ParseResult FlowParser::parseBinaryExpr(size_t nextOp, const Span<Token>& tokens
     }
     auto rhs = parseExpr(tokens.subspan(nextOp + 1));
     if (!rhs.isOk()) {
-        return lhs;
+        return rhs;
     }
     ast[newHead].addChild(rhs.okValue());
 

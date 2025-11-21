@@ -33,6 +33,7 @@ public:
      * @brief a nice shortcut to add a child to a given node
      */
     constexpr void addChild(size_t childIndx) noexcept {
+        std::cout << "Added child to token: " << body << ", child lives in index: " << childIndx << std::endl;
         children.push_back(childIndx);
     }
 };

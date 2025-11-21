@@ -26,9 +26,9 @@ int main() {
         return 1;
     }
 
-    for (auto t : tokens) {
-        std::cout << t << std::endl;
-    }
+    // for (auto t : tokens) {
+    //     std::cout << t << std::endl;
+    // }
 
     auto parser = FlowParser();
     auto head = parser.parse(tokens);

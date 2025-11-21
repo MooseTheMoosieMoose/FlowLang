@@ -43,15 +43,19 @@ public:
      * errors results in clearing the internal data of the parser
      */
     inline Result<ASTNode*, Utf8String> parse(std::vector<Token>& tokens) {
-        auto result = parseGlobal(Span<Token>(tokens.data(), tokens.size()));
+        auto result = parseExpr(Span<Token>(tokens.data(), tokens.size()));
         if (!result.isOk()) {
             ast.clear();
             return Result<ASTNode*, Utf8String>::Err(result.errValue());
         } else {
             std::cout << "AST has " << ast.size() << " Nodes" << std::endl;
+            for (const auto& t : ast) {
+                std::cout << t.body << std::endl;
+            }
             return Result<ASTNode*, Utf8String>::Ok(&ast[0]);
         }
     }
+
 
     /**
      * @brief displays an AST
