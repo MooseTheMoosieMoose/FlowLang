@@ -109,6 +109,7 @@ private:
      * @note uses emplace so that hopefully each AST node is only constructed once
      */
     size_t addAstNode(const Token* newNodeBody = nullptr, int64_t newParent = -1);
+    
 };
 
 

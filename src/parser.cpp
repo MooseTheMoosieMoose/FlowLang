@@ -405,17 +405,33 @@ std::optional<Utf8String> FlowParser::parseExprs(size_t parent, const Span<Token
 }
 
 ParseResult FlowParser::parseExpr(const Span<Token>& tokens) {
-    for (const auto& t : tokens) {
-        std::cout << t << std::endl;
-    }
+
     auto nextOp = findNextOp(tokens);
     if (nextOp == -1) {
-        std::cout << "No ops" << std::endl;
-    } else {
-        std::cout << "Next op is in index: " << nextOp << std::endl;
+        auto newTerminal = addAstNode(&tokens[0]);
+        return ParseResult::Ok(newTerminal);
     }
 
-    return ParseResult::Ok(0);
+    auto binding = getBindingType(tokens[nextOp]);
+    if (binding != BindingType::BinaryInfix) {
+        std::cout << "Testing with invalid binding type!" << std::endl;
+    }
+
+    auto newHead = addAstNode(&tokens[nextOp]);
+    
+    auto lhs = parseExpr(tokens.subspan(0, nextOp));
+    if (!lhs.isOk()) {
+        return lhs;
+    }
+    ast[newHead].addChild(lhs.okValue());
+
+    auto rhs = parseExpr(tokens.subspan(nextOp + 1));
+    if (!rhs.isOk()) {
+        return rhs;
+    }
+    ast[newHead].addChild(rhs.okValue());
+
+    return ParseResult::Ok(newHead);
 }
 
 // ParseResult FlowParser::parseExpr(const Span<Token>& tokens) {
