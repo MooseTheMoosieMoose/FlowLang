@@ -83,6 +83,10 @@ constexpr int64_t getPrescedence(const Token& token) {
         case TokenType::DivAssign: {
             return 11;
         }
+        case TokenType::OpenParen:
+        case TokenType::CloseParen: {
+            return -2;
+        }
         default: {
             return -1;
         }
@@ -148,11 +152,20 @@ Result<int64_t, Utf8String> extractSingle(const Span<Token>& tokens) {
 /*                                        Seekers                                                       */
 /*======================================================================================================*/
 
-int64_t findNextOp(const Span<Token>& tokens) {
+/**
+ * @brief searches through a given token stream and returns the following:
+ *  1. if there are 1+ operators in the token stream, the index of that operator is returned as Result::Ok
+ *  2. if there are no operators but a single literal, return Result::Err >= 0 with that literal
+ *  3. if there are no operators, multiple literals, or just parenthesis, return Result::Err(-1)
+ * @todo this is a bit of a mess so I would like to rework this
+ */
+Result<size_t, int64_t> findNextOp(const Span<Token>& tokens) {
     int64_t nextOpPres = 0;    //The raw pres of the next op
     int64_t nextOpPPower = INT64_MAX;  //The number of parenthesis around next op
     int64_t nextOpIndx = -1;   //The index of the next op
     int64_t currentPPower = 0; //The current pLevel
+    int64_t nextConst = -1; //The index of the next non-op
+    bool singleConst = true;
     for (int i = 0; i < tokens.size(); i++) {
         const auto& t = tokens[i];
         if (t.type == TokenType::OpenParen) {
@@ -165,8 +178,15 @@ int64_t findNextOp(const Span<Token>& tokens) {
             int64_t thisPres = getPrescedence(t);
             //Check to see if its a non-op
             if (thisPres == -1) {
+                //If no previous const is found, we should mark it as the potential next const to return
+                if (nextConst == -1) {
+                    nextConst == i;
+                } else {
+                    singleConst = false;
+                }
                 continue;
             }
+
             //If there is strictly less parenthesis it should always be run first
             if (currentPPower < nextOpPPower) {
                 nextOpPPower = currentPPower;
@@ -182,7 +202,24 @@ int64_t findNextOp(const Span<Token>& tokens) {
         }
     }
 
-    return nextOpIndx;
+    //Lets check what we have found
+    if (nextOpIndx == -1) {
+        if (singleConst == true) {
+            std::cout << "Next const succsessfully extracted from tokens:" << std::endl;
+            for (const auto& t : tokens) {
+                std::cout << t << std::endl;
+            }
+            return Result<size_t, int64_t>::Err(nextConst);
+        } else {
+            std::cout << "Next const FAILED to be extracted from tokens:" << std::endl;
+            for (const auto& t : tokens) {
+                std::cout << t << std::endl;
+            }
+            return Result<size_t, int64_t>::Err(-1);
+        }
+    } else {
+        return Result<size_t, int64_t>::Ok(nextOpIndx);
+    }
 }
 
 /**
@@ -406,11 +443,21 @@ std::optional<Utf8String> FlowParser::parseExprs(size_t parent, const Span<Token
 
 ParseResult FlowParser::parseExpr(const Span<Token>& tokens) {
 
-    auto nextOp = findNextOp(tokens);
-    if (nextOp == -1) {
-        auto newTerminal = addAstNode(&tokens[0]);
-        return ParseResult::Ok(newTerminal);
+    auto nextOpRes = findNextOp(tokens);
+    if (!nextOpRes.isOk()) {
+        //Its either an err or a constant to look at
+        int64_t nextConstPos = nextOpRes.errValue();
+        std::cout << "Next Const Pos is " << nextConstPos << std::endl;
+        if (nextConstPos == -1) {
+            return ParseResult::Err("Unexpected tokens!"_utf8);
+        } else {
+            auto newTerminal = addAstNode(&tokens[nextConstPos]);
+            return ParseResult::Ok(newTerminal);
+        }
     }
+
+    //Its not terminal, so get the operator
+    size_t nextOp = nextOpRes.okValue();
 
     auto binding = getBindingType(tokens[nextOp]);
     if (binding != BindingType::BinaryInfix) {
